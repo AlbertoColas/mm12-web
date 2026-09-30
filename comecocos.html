@@ -13,7 +13,7 @@
 <body>
 <canvas id="c"></canvas>
 <script>
-// Come cocos: desliza el dedo para girar. Para 1 jugador o 2 por turnos (gana quien más puntos haga).
+// Come cocos: joystick abajo (o desliza el dedo por el laberinto) para girar. Para 1 jugador o 2 por turnos (gana quien más puntos haga).
 const cv = document.getElementById('c'), ctx = cv.getContext('2d');
 const MAZE = [
   '###############',
@@ -46,14 +46,17 @@ const DIRS = {L:[-1,0], R:[1,0], U:[0,-1], D:[0,1]};
 const ALL_DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
 const isWall = (x,y) => x<0 || y<0 || x>=COLS || y>=ROWS || MAZE[y][x]==='#';
 
-let W, H, dpr, ts, ox, oy, hudH = 64;
+let W, H, dpr, ts, ox, oy, hudH = 64, joyH = 0;
+const joy = {cx:0, cy:0, R:0, id:null, kx:0, ky:0};
 function resize(){
   dpr = window.devicePixelRatio || 1;
   const r = cv.getBoundingClientRect(); W = r.width; H = r.height;
   cv.width = W*dpr; cv.height = H*dpr;
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  ts = Math.floor(Math.min(W/COLS, (H-hudH-12)/ROWS));
-  ox = Math.floor((W-ts*COLS)/2); oy = Math.floor(hudH + (H-hudH-ts*ROWS)/2);
+  joyH = Math.min(190, Math.round(H*0.26));
+  ts = Math.floor(Math.min(W/COLS, (H-hudH-joyH-12)/ROWS));
+  ox = Math.floor((W-ts*COLS)/2); oy = Math.floor(hudH + (H-hudH-joyH-ts*ROWS)/2);
+  joy.cx = W/2; joy.cy = H-joyH/2-4; joy.R = Math.min(64, joyH/2-8); joy.kx = joy.cx; joy.ky = joy.cy;
 }
 addEventListener('resize', resize); resize();
 
@@ -186,15 +189,29 @@ function tap(x,y){
   else if (mode==='result') mode='menu';
 }
 let sx=0, sy=0, tid=null;
+function joyMove(x,y){
+  let dx = x-joy.cx, dy = y-joy.cy; const d = Math.hypot(dx,dy);
+  if (d > joy.R){ dx *= joy.R/d; dy *= joy.R/d; }
+  joy.kx = joy.cx+dx; joy.ky = joy.cy+dy;
+  if (d > joy.R*0.3){
+    setWant(Math.abs(dx)>Math.abs(dy) ? (dx>0?DIRS.R:DIRS.L) : (dy>0?DIRS.D:DIRS.U));
+    if (mode==='ready') mode='play';
+  }
+}
+function joyRelease(){ joy.id = null; joy.kx = joy.cx; joy.ky = joy.cy; }
+const inJoyZone = y => y > H-joyH-8 && mode!=='menu';
 const local = t => { const r = cv.getBoundingClientRect(); return {x:t.clientX-r.left, y:t.clientY-r.top}; };
 cv.addEventListener('touchstart', e=>{
   e.preventDefault();
   const t0 = e.changedTouches[0], l = local(t0);
-  tid = t0.identifier; sx = l.x; sy = l.y; tap(l.x,l.y);
+  tap(l.x,l.y);
+  if (inJoyZone(l.y) && joy.id===null){ joy.id = t0.identifier; joyMove(l.x,l.y); }
+  else { tid = t0.identifier; sx = l.x; sy = l.y; }
 }, {passive:false});
 cv.addEventListener('touchmove', e=>{
   e.preventDefault();
   for (const t1 of e.changedTouches){
+    if (t1.identifier===joy.id){ const l = local(t1); joyMove(l.x,l.y); continue; }
     if (t1.identifier!==tid) continue;
     const l = local(t1), dx = l.x-sx, dy = l.y-sy;
     if (Math.max(Math.abs(dx),Math.abs(dy)) > 16){
@@ -204,7 +221,12 @@ cv.addEventListener('touchmove', e=>{
     }
   }
 }, {passive:false});
-cv.addEventListener('mousedown', e=>{ const l = local(e); tap(l.x,l.y); });
+const endTouch = e => { for (const t1 of e.changedTouches){ if (t1.identifier===joy.id) joyRelease(); if (t1.identifier===tid) tid = null; } };
+cv.addEventListener('touchend', endTouch); cv.addEventListener('touchcancel', endTouch);
+// ratón para probar en ordenador
+cv.addEventListener('mousedown', e=>{ const l = local(e); tap(l.x,l.y); if (inJoyZone(l.y)){ joy.id = 'mouse'; joyMove(l.x,l.y); } });
+addEventListener('mousemove', e=>{ if (joy.id==='mouse'){ const l = local(e); joyMove(l.x,l.y); } });
+addEventListener('mouseup', ()=>{ if (joy.id==='mouse') joyRelease(); });
 addEventListener('keydown', e=>{
   const d = {ArrowLeft:DIRS.L, ArrowRight:DIRS.R, ArrowUp:DIRS.U, ArrowDown:DIRS.D}[e.key];
   if (d){ e.preventDefault(); setWant(d); if (mode==='ready') mode='play'; }
@@ -215,12 +237,12 @@ addEventListener('keydown', e=>{
 function draw(){
   ctx.fillStyle = '#05051a'; ctx.fillRect(0,0,W,H);
   if (mode==='menu'){ drawMenu(); return; }
-  drawHud(); drawMaze();
+  drawHud(); drawMaze(); drawJoystick();
   for (const g of ghosts) drawGhost(g);
   drawPac();
   ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.font = `bold ${Math.round(ts*0.6)}px ui-monospace,monospace`;
   for (const p of popups){ ctx.fillStyle='#5cf'; ctx.fillText(p.text, ox+(p.x+.5)*ts, oy+(p.y+.5)*ts - (1-p.t)*ts*.6); }
-  if (mode==='ready') overlay('JUGADOR '+(cur+1), 'Desliza el dedo para empezar');
+  if (mode==='ready') overlay('JUGADOR '+(cur+1), 'Mueve el joystick para empezar');
   else if (mode==='levelup') overlay('¡NIVEL SUPERADO!', '+500 puntos');
   else if (mode==='handoff') overlay('TURNO DEL JUGADOR 2', 'Jugador 1 ha hecho '+results[0]+' · toca para empezar');
   else if (mode==='result') resultScreen();
@@ -234,6 +256,19 @@ function drawHud(){
   for (let i=0;i<lives;i++){
     drawPacShape(W-28-i*26, top, 9, 0.5, 0);
   }
+}
+function drawJoystick(){
+  const {cx,cy,R} = joy;
+  ctx.fillStyle='rgba(85,103,255,.12)'; ctx.strokeStyle='#5567ff'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='rgba(142,160,255,.7)';
+  const a = R*0.72, s = R*0.13;
+  for (const [dx,dy] of ALL_DIRS){
+    const px = cx+dx*a, py = cy+dy*a;
+    ctx.beginPath(); ctx.moveTo(px+dx*s, py+dy*s); ctx.lineTo(px-dx*s-dy*s, py-dy*s+dx*s); ctx.lineTo(px-dx*s+dy*s, py-dy*s-dx*s); ctx.closePath(); ctx.fill();
+  }
+  ctx.fillStyle = joy.id!==null ? '#ffe600' : 'rgba(255,230,0,.75)';
+  ctx.beginPath(); ctx.arc(joy.kx, joy.ky, R*0.42, 0, 7); ctx.fill();
 }
 function drawMaze(){
   for (let y=0;y<ROWS;y++) for (let x=0;x<COLS;x++){
@@ -320,7 +355,7 @@ function drawMenu(){
     ctx.fillStyle=c; ctx.beginPath(); ctx.arc(W/2+60+i*34, H*0.33, 10, 0, 7); ctx.fill();
   });
   ctx.fillStyle='#ffe9b0'; for (let i=0;i<3;i++){ ctx.beginPath(); ctx.arc(W/2-110+i*28, H*0.33, 4, 0, 7); ctx.fill(); }
-  ctx.fillStyle='#8ea0ff'; ctx.font='14px ui-monospace,monospace'; ctx.fillText('Desliza el dedo para girar', W/2, H*0.42);
+  ctx.fillStyle='#8ea0ff'; ctx.font='14px ui-monospace,monospace'; ctx.fillText('Usa el joystick de abajo para girar', W/2, H*0.42);
   for (const b of buttons()){
     ctx.fillStyle='#ffe600'; ctx.beginPath(); ctx.roundRect(b.x,b.y,b.w,b.h,27); ctx.fill();
     ctx.fillStyle='#14141f'; ctx.font='bold 15px ui-monospace,monospace'; ctx.fillText(b.label, b.x+b.w/2, b.y+b.h/2, b.w-16);
