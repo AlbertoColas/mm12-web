@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Tenis para dos</title>
+<style>
+  html,body{margin:0;height:100%;background:#1b5e20;overflow:hidden;touch-action:none;
+    -webkit-user-select:none;user-select:none;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+  canvas{display:block;width:100vw;height:100dvh}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+// Tenis para dos: cada jugador arrastra el dedo en SU mitad de la pantalla.
+// Abajo: Jugador 1 (azul). Arriba: Jugador 2 (rojo, la pantalla se ve girada para quien juega desde arriba).
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const WIN = 5;
+let W, H, dpr;
+function resize(){
+  dpr = window.devicePixelRatio || 1;
+  W = innerWidth; H = innerHeight;
+  cv.width = W*dpr; cv.height = H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize', resize); resize();
+
+const p = [ {x:0, score:0, tx:0}, {x:0, score:0, tx:0} ]; // 0 = abajo, 1 = arriba
+const ball = {x:0,y:0,vx:0,vy:0,r:10};
+let state = 'menu';      // menu | serve | play | over
+let server = 0, msg = '', msgT = 0, winner = -1;
+const PW = () => Math.min(W*0.28, 120), PH = 14;
+const padY = i => i===0 ? H-60 : 60;
+
+function reset(){ p[0].score=p[1].score=0; server=0; winner=-1; toServe(); }
+function toServe(){
+  p[0].x=p[0].tx=W/2; p[1].x=p[1].tx=W/2;
+  ball.x=W/2; ball.y=H/2; ball.vx=ball.vy=0;
+  state='serve';
+}
+function launch(){
+  const sp = H*0.55;
+  ball.vy = (server===0?-1:1)*sp;
+  ball.vx = (Math.random()-.5)*W*0.6;
+  state='play';
+}
+function point(who){
+  p[who].score++;
+  if (p[who].score>=WIN){ winner=who; state='over'; return; }
+  server = 1-who; // saca quien perdió el punto
+  toServe();
+}
+
+function touch(e){
+  e.preventDefault();
+  for (const t of e.touches){
+    const i = t.clientY > H/2 ? 0 : 1;
+    p[i].tx = t.clientX;
+  }
+}
+cv.addEventListener('touchstart', e=>{
+  touch(e);
+  if (state==='menu'){ reset(); }
+  else if (state==='over'){ state='menu'; }
+  else if (state==='serve'){ launch(); }
+}, {passive:false});
+cv.addEventListener('touchmove', touch, {passive:false});
+// ratón para probar en ordenador
+cv.addEventListener('mousemove', e=>{ p[e.clientY>H/2?0:1].tx = e.clientX; });
+cv.addEventListener('mousedown', ()=>{
+  if (state==='menu') reset(); else if (state==='over') state='menu'; else if (state==='serve') launch();
+});
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.033,(now-last)/1000); last = now;
+  update(dt); draw(); requestAnimationFrame(loop);
+}
+function update(dt){
+  const pw = PW();
+  for (const q of p){
+    q.x += (q.tx - q.x) * Math.min(1, dt*25);
+    q.x = Math.max(pw/2, Math.min(W-pw/2, q.x));
+  }
+  if (state!=='play') return;
+  ball.x += ball.vx*dt; ball.y += ball.vy*dt;
+  if (ball.x < ball.r){ ball.x = ball.r; ball.vx = Math.abs(ball.vx); }
+  if (ball.x > W-ball.r){ ball.x = W-ball.r; ball.vx = -Math.abs(ball.vx); }
+  for (let i=0;i<2;i++){
+    const y = padY(i), q = p[i];
+    const hit = Math.abs(ball.y - y) < PH/2 + ball.r && Math.abs(ball.x - q.x) < pw/2 + ball.r;
+    const toward = i===0 ? ball.vy>0 : ball.vy<0;
+    if (hit && toward){
+      const off = (ball.x - q.x)/(pw/2);           // -1..1 según dónde golpees
+      const speed = Math.min(Math.hypot(ball.vx,ball.vy)*1.06, H*1.4);
+      ball.vx = off * speed*0.7;
+      ball.vy = (i===0?-1:1) * Math.sqrt(Math.max(speed*speed - ball.vx*ball.vx, (speed*0.4)**2));
+      ball.y = y + (i===0?-1:1)*(PH/2+ball.r);
+      if (navigator.vibrate) navigator.vibrate(15);
+    }
+  }
+  if (ball.y > H+20) point(1);
+  else if (ball.y < -20) point(0);
+}
+
+function draw(){
+  // pista
+  ctx.fillStyle='#2e7d32'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#388e3c'; ctx.fillRect(0,0,W,H/2);
+  ctx.strokeStyle='rgba(255,255,255,.8)'; ctx.lineWidth=3;
+  ctx.strokeRect(12,12,W-24,H-24);
+  ctx.setLineDash([14,10]); ctx.beginPath(); ctx.moveTo(12,H/2); ctx.lineTo(W-12,H/2); ctx.stroke(); ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(W/2,H*0.25); ctx.lineTo(W/2,H*0.75); ctx.stroke();
+
+  // marcador (el de arriba se dibuja girado)
+  ctx.fillStyle='rgba(255,255,255,.35)'; ctx.font='bold 64px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(p[0].score, W-50, H/2+50);
+  ctx.save(); ctx.translate(50, H/2-50); ctx.rotate(Math.PI); ctx.fillText(p[1].score,0,0); ctx.restore();
+
+  // raquetas
+  const pw = PW();
+  for (let i=0;i<2;i++){
+    ctx.fillStyle = i===0 ? '#42a5f5' : '#ef5350';
+    const y = padY(i);
+    ctx.beginPath(); ctx.roundRect(p[i].x-pw/2, y-PH/2, pw, PH, 7); ctx.fill();
+  }
+  // pelota
+  if (state!=='menu'){
+    ctx.fillStyle='#e6ff3b'; ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,7); ctx.fill();
+  }
+
+  if (state==='menu') overlay('🎾 TENIS', 'Cada uno mueve el dedo en su mitad', 'Toca para empezar', true);
+  else if (state==='serve') overlay(null, null, (server===0?'Saca Jugador 1 (azul)':'Saca Jugador 2 (rojo)')+' · toca para sacar', server===1);
+  else if (state==='over') overlay('¡Gana el Jugador '+(winner+1)+'!', p[0].score+' - '+p[1].score, 'Toca para volver a jugar', winner===1);
+}
+
+// texto central; se muestra duplicado girado para que lo lean ambos jugadores
+function overlay(big, mid, small){
+  for (const rot of [0,1]){
+    ctx.save(); ctx.translate(W/2, H/2); if (rot) ctx.rotate(Math.PI);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const dy = 70;
+    if (big){ ctx.fillStyle='#fff'; ctx.font='bold 38px sans-serif'; ctx.strokeStyle='rgba(0,0,0,.5)'; ctx.lineWidth=5;
+      ctx.strokeText(big,0,dy-48); ctx.fillText(big,0,dy-48); }
+    if (mid){ ctx.fillStyle='#fff'; ctx.font='18px sans-serif'; ctx.fillText(mid,0,dy-10); }
+    ctx.fillStyle='#ffeb3b'; ctx.font='bold 17px sans-serif'; ctx.fillText(small,0,dy+22);
+    ctx.restore();
+  }
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
