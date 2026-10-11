@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
-  /* Juego de familia por turnos: pasar el móvil, sacar carta (pregunta, mímica o reto) y sumar puntos. */
+  /* Juego cooperativo de familia: pasar el móvil, sacar carta (pregunta, mímica o reto) y sumar puntos entre todos. */
   :root{
     --bg:#1d1b4d; --card:#ffffff; --ink:#1d1b4d; --muted:#6b6a8f;
     --yellow:#ffd23f; --teal:#2ec4b6; --pink:#ff5d8f; --orange:#ff9f1c; --good:#2bb673; --bad:#e5484d;
@@ -69,56 +69,86 @@
 <body>
 <main id="app"></main>
 <script>
+// [pregunta, opciones, índice correcto, nivel de dificultad 1-4]
 const TRIVIA = [
-  ['¿Cuál es el planeta más grande del sistema solar?', ['Júpiter','Saturno','Marte','Tierra'], 0],
-  ['¿Cuántas patas tiene una araña?', ['6','8','10','12'], 1],
-  ['¿Cuál es la capital de Francia?', ['Lyon','Marsella','París','Niza'], 2],
-  ['¿Qué color sale al mezclar azul y amarillo?', ['Verde','Naranja','Morado','Marrón'], 0],
-  ['¿Cuál es el animal terrestre más rápido?', ['León','Guepardo','Caballo','Avestruz'], 1],
-  ['¿Cuántos jugadores de un equipo de fútbol hay a la vez en el campo?', ['9','10','11','12'], 2],
-  ['¿Cuál es el océano más grande?', ['Atlántico','Índico','Ártico','Pacífico'], 3],
-  ['¿Quién pintó «Las Meninas»?', ['Goya','Velázquez','Picasso','Dalí'], 1],
-  ['¿Cuántos días tiene un año bisiesto?', ['364','365','366','367'], 2],
-  ['¿Cuál es el río más largo de la península ibérica?', ['Ebro','Duero','Guadalquivir','Tajo'], 3],
-  ['¿Qué gas necesitamos respirar para vivir?', ['Oxígeno','Helio','Nitrógeno','Hidrógeno'], 0],
-  ['¿Cuántos colores tiene el arcoíris?', ['5','6','7','8'], 2],
-  ['¿Cuál es el animal más grande del mundo?', ['Elefante','Ballena azul','Jirafa','Tiburón blanco'], 1],
-  ['¿En qué continente está Egipto?', ['Asia','Europa','África','Oceanía'], 2],
-  ['¿Cuántos lados tiene un hexágono?', ['5','6','7','8'], 1],
-  ['¿Qué planeta se conoce como el planeta rojo?', ['Venus','Mercurio','Neptuno','Marte'], 3],
-  ['¿Quién escribió «Don Quijote de la Mancha»?', ['Lope de Vega','Cervantes','Quevedo','Bécquer'], 1],
-  ['¿Cuál es el hueso más largo del cuerpo humano?', ['Fémur','Tibia','Húmero','Costilla'], 0],
-  ['¿Cuántos minutos hay en una hora y media?', ['80','90','100','120'], 1],
-  ['¿Qué instrumento tiene teclas blancas y negras?', ['Violín','Trompeta','Piano','Flauta'], 2],
-  ['¿Cuál es la capital de Italia?', ['Roma','Milán','Venecia','Nápoles'], 0],
-  ['¿Qué país tiene forma de bota?', ['España','Grecia','Portugal','Italia'], 3],
-  ['¿Cuántos huesos tiene aproximadamente un adulto?', ['106','206','306','406'], 1],
-  ['¿Qué metal es líquido a temperatura ambiente?', ['Mercurio','Hierro','Plata','Cobre'], 0],
-  ['¿En qué año llegó el ser humano a la Luna?', ['1959','1965','1969','1975'], 2],
-  ['¿Cuál es el país más grande del mundo?', ['China','Canadá','Estados Unidos','Rusia'], 3],
-  ['¿Qué animal es el rey de la selva en los cuentos?', ['Tigre','León','Oso','Lobo'], 1],
-  ['¿Cuántas estaciones tiene el año?', ['3','4','5','6'], 1],
+  // Nivel 1
+  ['¿Cuántas patas tiene una araña?', ['6','8','10','12'], 1, 1],
+  ['¿Cuál es la capital de Francia?', ['Lyon','Marsella','París','Niza'], 2, 1],
+  ['¿Qué color sale al mezclar azul y amarillo?', ['Verde','Naranja','Morado','Marrón'], 0, 1],
+  ['¿Cuántos jugadores de un equipo de fútbol hay a la vez en el campo?', ['9','10','11','12'], 2, 1],
+  ['¿Cuántos colores tiene el arcoíris?', ['5','6','7','8'], 2, 1],
+  ['¿Cuántas estaciones tiene el año?', ['3','4','5','6'], 1, 1],
+  ['¿Cuántos lados tiene un hexágono?', ['5','6','7','8'], 1, 1],
+  ['¿Qué instrumento tiene teclas blancas y negras?', ['Violín','Trompeta','Piano','Flauta'], 2, 1],
+  ['¿Qué planeta se conoce como el planeta rojo?', ['Venus','Mercurio','Neptuno','Marte'], 3, 1],
+  ['¿Qué gas necesitamos respirar para vivir?', ['Oxígeno','Helio','Nitrógeno','Hidrógeno'], 0, 1],
+  // Nivel 2
+  ['¿Cuál es el planeta más grande del sistema solar?', ['Júpiter','Saturno','Marte','Tierra'], 0, 2],
+  ['¿Quién pintó «Las Meninas»?', ['Goya','Velázquez','Picasso','Dalí'], 1, 2],
+  ['¿Cuántos días tiene un año bisiesto?', ['364','365','366','367'], 2, 2],
+  ['¿Cuál es el río más largo de la península ibérica?', ['Ebro','Duero','Guadalquivir','Tajo'], 3, 2],
+  ['¿Quién escribió «Don Quijote de la Mancha»?', ['Lope de Vega','Cervantes','Quevedo','Bécquer'], 1, 2],
+  ['¿Cuál es el hueso más largo del cuerpo humano?', ['Fémur','Tibia','Húmero','Costilla'], 0, 2],
+  ['¿Cuántos huesos tiene aproximadamente un adulto?', ['106','206','306','406'], 1, 2],
+  ['¿Qué metal es líquido a temperatura ambiente?', ['Mercurio','Hierro','Plata','Cobre'], 0, 2],
+  ['¿En qué año llegó el ser humano a la Luna?', ['1959','1965','1969','1975'], 2, 2],
+  ['¿Cuál es el país más grande del mundo?', ['China','Canadá','Estados Unidos','Rusia'], 3, 2],
+  ['¿En qué año llegó Colón a América?', ['1392','1492','1592','1692'], 1, 2],
+  ['¿Cuál es el órgano más grande del cuerpo humano?', ['El hígado','El corazón','La piel','El pulmón'], 2, 2],
+  // Nivel 3
+  ['¿Cuál es el símbolo químico del oro?', ['Ag','Au','Fe','Go'], 1, 3],
+  ['¿Quién compuso «Las cuatro estaciones»?', ['Mozart','Beethoven','Vivaldi','Bach'], 2, 3],
+  ['¿Cuál es la capital de Australia?', ['Sídney','Melbourne','Canberra','Perth'], 2, 3],
+  ['¿En qué año cayó el Muro de Berlín?', ['1979','1985','1989','1991'], 2, 3],
+  ['¿Cuántos corazones tiene un pulpo?', ['1','2','3','8'], 2, 3],
+  ['¿Cuál es la montaña más alta de España?', ['Mulhacén','Aneto','Teide','Veleta'], 2, 3],
+  ['¿Cuál es el hueso más pequeño del cuerpo humano?', ['Yunque','Estribo','Martillo','Falange'], 1, 3],
+  ['¿Quién pintó «La persistencia de la memoria»?', ['Miró','Dalí','Picasso','Magritte'], 1, 3],
+  ['¿Cuál es la capital de Canadá?', ['Toronto','Vancouver','Montreal','Ottawa'], 3, 3],
+  ['¿Quién descubrió la penicilina?', ['Pasteur','Fleming','Curie','Koch'], 1, 3],
+  ['¿Quién escribió «Cien años de soledad»?', ['García Márquez','Vargas Llosa','Borges','Cortázar'], 0, 3],
+  ['¿Cuál es el desierto cálido más grande del mundo?', ['Gobi','Kalahari','Sáhara','Atacama'], 2, 3],
+  // Nivel 4
+  ['¿Cuál es el elemento más abundante del universo?', ['Oxígeno','Hidrógeno','Helio','Carbono'], 1, 4],
+  ['¿En qué año comenzó la Revolución Francesa?', ['1689','1750','1789','1815'], 2, 4],
+  ['¿Cuál es el río más largo de Europa?', ['Danubio','Rin','Volga','Támesis'], 2, 4],
+  ['¿Cuál es el número atómico del carbono?', ['4','6','8','12'], 1, 4],
+  ['¿En qué batalla fue derrotado definitivamente Napoleón en 1815?', ['Austerlitz','Trafalgar','Waterloo','Leipzig'], 2, 4],
+  ['¿Cómo se llama el punto más profundo de los océanos?', ['Fosa de las Marianas','Fosa de Puerto Rico','Fosa de Java','Fosa de Tonga'], 0, 4],
+  ['¿Quién fue el primer ser humano en viajar al espacio?', ['Neil Armstrong','Yuri Gagarin','Buzz Aldrin','John Glenn'], 1, 4],
+  ['¿Cuántos elementos tiene la tabla periódica actual?', ['92','108','118','128'], 2, 4],
+  ['¿Qué país tiene más islas del mundo?', ['Indonesia','Filipinas','Suecia','Japón'], 2, 4],
+  ['¿Cuál es la lengua más hablada del mundo como lengua materna?', ['Inglés','Chino mandarín','Español','Hindi'], 1, 4],
 ];
-const MIMICA = ['Elefante','Pizza','Bailar flamenco','Dormir','Futbolista','Cocinero','Astronauta','Mono','Lavarse los dientes',
+const MIMICA_FACIL = ['Elefante','Pizza','Bailar flamenco','Dormir','Futbolista','Cocinero','Astronauta','Mono','Lavarse los dientes',
   'Pescar','Tocar la guitarra','Conducir un coche','Montar en bici','Pingüino','Peluquero','Nadar','Payaso','Robot','Dinosaurio',
   'Jugar al tenis','Gallina','Surfear','Tomar un helado','Médico','Mago','Hacer una tarta','Serpiente','Boxeador','Fantasma','Esquiar'];
-const RETOS = [
+const MIMICA_DIFICIL = ['Un camarero con la bandeja llena','Atrapar una mosca','Caminar contra el viento','Un astronauta flotando',
+  'Planchar una camisa','Un bebé aprendiendo a andar','Ir al dentista','Hacer cola en el supermercado','Jugar al ajedrez',
+  'Montar una tienda de campaña','Un gato que se cae de la cama','Un torero','Cambiar un pañal','Escalar una montaña','Una tormenta'];
+const RETOS_FACIL = [
   'Di tres veces seguidas sin fallar: «Tres tristes tigres tragaban trigo en un trigal».',
-  'Cuenta un chiste a la familia. ¡Tiene que hacer reír a alguien!',
   'Aguanta 20 segundos a la pata coja.',
   'Nombra 5 animales en 10 segundos.',
-  'Pon la cara más graciosa que puedas y aguanta 10 segundos sin reírte.',
   'Nombra 5 países de Europa en 10 segundos.',
   'Cuenta del 20 al 0 de dos en dos sin equivocarte.',
-  'Abraza a la persona de tu derecha y dile algo bonito.',
   'Haz 10 sentadillas contando en voz alta.',
-  'Imita a alguien de la familia sin decir su nombre. Los demás adivinan quién es.',
   'Nombra 5 frutas en 8 segundos.',
   'Habla con voz de robot durante 15 segundos.',
   'Cuenta lo que hiciste ayer en exactamente 3 frases.',
   'Di el abecedario al revés desde la Z hasta la T.',
-  'Canta el estribillo de una canción. Los demás adivinan cuál es.',
-  'Nombra 5 colores sin repetir ninguno en 6 segundos.',
+];
+const RETOS_DIFICIL = [
+  'Di tres veces seguidas sin fallar: «El perro de San Roque no tiene rabo porque Ramón Ramírez se lo ha robado».',
+  'Nombra 8 animales en 10 segundos.',
+  'Di el abecedario al revés desde la Z hasta la M.',
+  'Nombra 6 países de África en 15 segundos.',
+  'Haz 15 sentadillas contando en voz alta.',
+  'Cuenta de 3 en 3 desde 0 hasta 36 sin equivocarte.',
+  'Aguanta 30 segundos a la pata coja.',
+  'Nombra 7 capitales de Europa en 15 segundos.',
+  'Di 6 palabras que empiecen por «ca» en 10 segundos.',
+  'Cuenta del 100 al 70 de dos en dos sin equivocarte.',
 ];
 const TYPES = {
   trivia: {label:'Pregunta', color:'var(--teal)'},
@@ -128,20 +158,30 @@ const TYPES = {
 
 const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
 const deck = arr => { let d=[]; return () => { if(!d.length) d = shuffle(arr.slice()); return d.pop(); }; };
-const nextTrivia = deck(TRIVIA), nextMimica = deck(MIMICA), nextReto = deck(RETOS);
+const triviaDecks = [1,2,3,4].map(l => deck(TRIVIA.filter(q => q[3]===l)));
+const nextMimica = [deck(MIMICA_FACIL), deck(MIMICA_DIFICIL)], nextReto = [deck(RETOS_FACIL), deck(RETOS_DIFICIL)];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const S = { screen:'setup', names:['Jugador 1','Jugador 2'], rounds:3, players:[], turn:0, card:null };
+const S = { screen:'setup', names:['Jugador 1','Jugador 2'], rounds:3, players:[], turn:0, card:null, score:0, record:null };
 const app = document.getElementById('app');
 let timer = null;
 const stopTimer = () => { if (timer){ clearInterval(timer); timer = null; } };
 const cur = () => S.players[S.turn % S.players.length];
 const total = () => S.rounds * S.players.length;
-const round = () => Math.floor(S.turn / S.players.length) + 1;
+const roundOf = t => Math.floor(t / S.players.length) + 1;
+// La dificultad sube a lo largo de la partida: nivel 1 al principio, hasta nivel 4 al final.
+const levelOf = t => 1 + Math.min(3, Math.floor((roundOf(t)-1) * 4 / S.rounds));
+const level = () => levelOf(S.turn);
+const value = () => 2 * level();
+const maxScore = () => { let m = 0; for (let t=0;t<total();t++) m += 2*levelOf(t); return m; };
+const stars = l => '★'.repeat(l) + '☆'.repeat(4-l);
+const recKey = () => 'familia-record-' + S.rounds + '-' + S.names.length;
+const readRecord = () => { try { return +localStorage.getItem(recKey()) || 0; } catch(e){ return 0; } };
+const saveRecord = v => { try { localStorage.setItem(recKey(), String(v)); } catch(e){} };
 
-function scoreChips(){
-  return '<div class="scores">' + S.players.map(p =>
-    `<span class="chip ${p===cur()?'on':''}">${esc(p.name)} · ${p.score}</span>`).join('') + '</div>';
+function header(){
+  return `<div class="scores"><span class="chip on">Equipo: ${S.score} pts</span>
+    <span class="chip">Nivel ${stars(level())}</span><span class="chip">Turno de ${esc(cur().name)}</span></div>`;
 }
 function show(html){ stopTimer(); app.innerHTML = html; app.firstElementChild && app.firstElementChild.classList.add('pop'); window.scrollTo(0,0); }
 
@@ -150,7 +190,7 @@ function setup(){
   S.screen = 'setup';
   show(`<div class="stack">
     <h1>🎲 Pasa el móvil</h1>
-    <p class="muted">Pregunta, mímica o reto: cada turno toca una carta. ¡Gana quien más puntos sume!</p>
+    <p class="muted">Todos sois un equipo. Pregunta, mímica o reto: ¡sumad los máximos puntos posibles! Cada ronda es más difícil.</p>
   </div>
   <div class="card">
     <div class="label">Jugadores (2 a 6)</div>
@@ -168,36 +208,38 @@ function setup(){
   document.getElementById('add').onclick = () => { S.names.push('Jugador '+(S.names.length+1)); setup(); };
   app.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { S.rounds = +b.dataset.r; setup(); });
   document.getElementById('go').onclick = () => {
-    S.players = S.names.map((n,i)=>({name:(n.trim()||'Jugador '+(i+1)), score:0}));
-    S.turn = 0; turnScreen();
+    S.players = S.names.map((n,i)=>({name:(n.trim()||'Jugador '+(i+1))}));
+    S.turn = 0; S.score = 0; S.record = readRecord(); turnScreen();
   };
 }
 
 // ---------- Turno ----------
 function turnScreen(){
   S.screen = 'turn';
-  show(`<div class="stack">${scoreChips()}<p class="muted">Ronda ${round()} de ${S.rounds}</p></div>
+  const newRound = S.turn % S.players.length === 0;
+  const harder = newRound && S.turn>0 && level() > levelOf(S.turn-1);
+  show(`<div class="stack">${header()}<p class="muted">Ronda ${roundOf(S.turn)} de ${S.rounds}${S.record?` · Récord: ${S.record} pts`:''}</p></div>
   <div class="grow center" style="display:flex;flex-direction:column;justify-content:center;gap:12px">
+    ${harder?`<p class="msg" style="color:var(--yellow)">⬆ ¡Sube la dificultad! Nivel ${level()}</p>`:''}
     <p class="muted">Le toca a</p>
     <div class="big" style="overflow-wrap:anywhere">${esc(cur().name)}</div>
-    <p class="muted">Coge el móvil y saca una carta</p>
+    <p class="muted">Cada carta vale <b>${value()} puntos</b> para el equipo</p>
   </div>
   <button class="btn" id="draw">🃏 Sacar carta</button>`);
   document.getElementById('draw').onclick = drawCard;
 }
 function drawCard(){
-  const r = Math.random();
-  const type = r < .4 ? 'trivia' : r < .7 ? 'mimica' : 'reto';
+  const r = Math.random(), L = level();
+  const type = r < .45 ? 'trivia' : r < .72 ? 'mimica' : 'reto';
+  const hard = L >= 3 ? 1 : 0;
   if (type==='trivia'){
-    const [q,opts,ans] = nextTrivia();
-    const order = shuffle(opts.map((o,i)=>({o,ok:i===ans})));
-    S.card = {type, q, order};
-  } else if (type==='mimica') S.card = {type, word:nextMimica()};
-  else S.card = {type, text:nextReto()};
+    const [q,opts,ans] = triviaDecks[L-1]();
+    S.card = {type, q, order: shuffle(opts.map((o,i)=>({o,ok:i===ans})))};
+  } else if (type==='mimica') S.card = {type, word:nextMimica[hard](), secs:[60,50,40,30][L-1]};
+  else S.card = {type, text:nextReto[hard]()};
   cardScreen();
 }
-const tag = t => `<span class="tag" style="background:${TYPES[t].color}">${TYPES[t].label}</span>`;
-const award = (p,n) => { p.score += n; };
+const tag = t => `<span class="tag" style="background:${TYPES[t].color}">${TYPES[t].label} · +${value()}</span>`;
 
 function cardScreen(){
   const c = S.card;
@@ -209,8 +251,9 @@ function cardScreen(){
 // Pregunta
 function triviaScreen(c){
   S.screen = 'card';
-  show(`<div class="stack">${scoreChips()}</div>
+  show(`<div class="stack">${header()}</div>
   <div class="card">${tag('trivia')}<div class="question">${esc(c.q)}</div>
+    <p class="muted" style="color:var(--muted);font-size:.95rem">Hablad entre todos y elegid una respuesta.</p>
     <div class="opts">${c.order.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o.o)}</button>`).join('')}</div>
     <div id="res"></div>
   </div>
@@ -218,8 +261,8 @@ function triviaScreen(c){
   app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
     const i = +b.dataset.i, ok = c.order[i].ok;
     app.querySelectorAll('.opt').forEach((x,j)=>{ x.disabled = true; if (c.order[j].ok) x.classList.add('ok'); });
-    if (!ok) b.classList.add('ko'); else award(cur(),2);
-    document.getElementById('res').innerHTML = `<p class="msg ${ok?'good':'bad'}">${ok?'¡Correcto! +2 puntos':'¡Uy! Era la verde.'}</p>
+    if (!ok) b.classList.add('ko'); else S.score += value();
+    document.getElementById('res').innerHTML = `<p class="msg ${ok?'good':'bad'}">${ok?'¡Correcto! +'+value()+' puntos para el equipo':'¡Uy! La buena era la verde.'}</p>
       <button class="btn" id="next" style="margin-top:12px">Siguiente</button>`;
     document.getElementById('next').onclick = nextTurn;
   });
@@ -228,25 +271,23 @@ function triviaScreen(c){
 // Mímica
 function mimicaIntro(c){
   S.screen = 'card';
-  show(`<div class="stack">${scoreChips()}</div>
+  show(`<div class="stack">${header()}</div>
   <div class="card">${tag('mimica')}
     <h2>${esc(cur().name)}, haz mímica</h2>
-    <p>Solo puedes mirar tú. Sin hablar: ¡que los demás adivinen la palabra!</p>
+    <p>Solo puedes mirar tú. Sin hablar: ¡que el equipo adivine antes de que acabe el tiempo (${c.secs} s)!</p>
     <button class="btn" id="see">👀 Ver mi palabra</button>
   </div><div class="grow"></div>`);
   document.getElementById('see').onclick = () => mimicaPlay(c);
 }
 function mimicaPlay(c){
-  const others = S.players.filter(p => p!==cur());
-  show(`<div class="stack">${scoreChips()}</div>
+  show(`<div class="stack">${header()}</div>
   <div class="card">${tag('mimica')}
     <div class="word" id="word">${esc(c.word)}</div>
-    <div class="center big" id="clock">60</div>
-    <button class="btn" id="start">▶ Empezar (60 s)</button>
+    <div class="center big" id="clock">${c.secs}</div>
+    <button class="btn" id="start">▶ Empezar (${c.secs} s)</button>
     <div class="stack" id="who" hidden>
-      <div class="label">¿Quién lo adivinó?</div>
-      ${others.map((p,i)=>`<button class="btn good" data-i="${i}">${esc(p.name)}</button>`).join('')}
-      <button class="btn ghost" style="color:var(--ink);border-color:#e3e2f5" id="nobody">Nadie</button>
+      <button class="btn good" id="yes">¡Lo adivinamos! +${value()}</button>
+      <button class="btn bad" id="no">No lo adivinamos</button>
     </div>
   </div><div class="grow"></div>`);
   const clock = document.getElementById('clock');
@@ -256,28 +297,28 @@ function mimicaPlay(c){
   };
   document.getElementById('start').onclick = e => {
     e.target.hidden = true; document.getElementById('who').hidden = false;
-    const end = Date.now()+60000;
+    const end = Date.now()+c.secs*1000;
     timer = setInterval(() => {
       const left = Math.ceil((end-Date.now())/1000);
       if (left<=0) finish(); else clock.textContent = left;
     }, 250);
   };
-  app.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { award(cur(),2); award(others[+b.dataset.i],2); nextTurn(); });
-  document.getElementById('nobody').onclick = nextTurn;
+  document.getElementById('yes').onclick = () => { S.score += value(); nextTurn(); };
+  document.getElementById('no').onclick = nextTurn;
 }
 
 // Reto
 function retoScreen(c){
   S.screen = 'card';
-  show(`<div class="stack">${scoreChips()}</div>
+  show(`<div class="stack">${header()}</div>
   <div class="card">${tag('reto')}
     <h2>${esc(cur().name)}, tu reto</h2>
     <div class="question">${esc(c.text)}</div>
-    <div class="label">Que decidan los demás</div>
-    <button class="btn good" id="ok">¡Lo logró! +2</button>
+    <div class="label">Que decida el resto del equipo</div>
+    <button class="btn good" id="ok">¡Lo logró! +${value()}</button>
     <button class="btn bad" id="ko">No lo logró</button>
   </div><div class="grow"></div>`);
-  document.getElementById('ok').onclick = () => { award(cur(),2); nextTurn(); };
+  document.getElementById('ok').onclick = () => { S.score += value(); nextTurn(); };
   document.getElementById('ko').onclick = nextTurn;
 }
 
@@ -288,20 +329,20 @@ function nextTurn(){
 }
 function finalScreen(){
   S.screen = 'final';
-  const sorted = S.players.slice().sort((a,b)=>b.score-a.score);
-  const top = sorted[0].score, winners = sorted.filter(p=>p.score===top);
-  const medal = ['🥇','🥈','🥉'];
-  let pos = 0;
-  show(`<div class="stack center"><div class="big">🏆</div>
-    <h1>${winners.length>1 ? '¡Empate!' : '¡Gana '+esc(winners[0].name)+'!'}</h1></div>
-  <div class="stack">${sorted.map((p,i)=>{
-    if (i>0 && p.score<sorted[i-1].score) pos = i;
-    return `<div class="rank ${p.score===top?'first':''}" style="color:var(--ink)"><span class="pos">${medal[pos]||pos+1}</span>
-      <span class="nm">${esc(p.name)}</span><span class="pts">${p.score} pts</span></div>`; }).join('')}</div>
+  const max = maxScore(), pct = Math.round(100*S.score/max), prev = readRecord(), isRecord = S.score > prev;
+  if (isRecord) saveRecord(S.score);
+  const verdict = pct>=90 ? '¡Equipo de leyenda!' : pct>=70 ? '¡Gran equipo!' : pct>=40 ? '¡Buen trabajo, equipo!' : '¡Ánimo! La próxima, más.';
+  show(`<div class="stack center"><div class="big">🏆</div><h1>${verdict}</h1></div>
+  <div class="card center" style="gap:8px">
+    <div class="label">Puntos del equipo</div>
+    <div class="big" style="color:var(--ink)">${S.score}</div>
+    <p style="color:var(--muted)">de ${max} posibles (${pct}%)</p>
+    ${isRecord ? '<p class="msg good">🎉 ¡Nuevo récord!</p>' : (prev ? `<p style="color:var(--muted)">Récord: ${prev} pts</p>` : '')}
+  </div>
   <div class="grow"></div>
   <button class="btn" id="again">Jugar otra vez</button>
   <button class="btn ghost" id="change">Cambiar jugadores</button>`);
-  document.getElementById('again').onclick = () => { S.players.forEach(p=>p.score=0); S.turn=0; turnScreen(); };
+  document.getElementById('again').onclick = () => { S.turn=0; S.score=0; S.record=readRecord(); turnScreen(); };
   document.getElementById('change').onclick = setup;
 }
 setup();
