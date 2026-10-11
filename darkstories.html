@@ -51,6 +51,10 @@
   .counter .num{flex:1;border:1px solid var(--line);border-radius:14px;padding:8px 14px;display:flex;flex-direction:column;justify-content:center}
   .counter .num b{font-size:1.7rem;line-height:1;font-variant-numeric:tabular-nums}
   .counter .btn{width:auto;padding-inline:20px}
+  .tabs{display:flex;gap:8px}
+  .tabs button{flex:1;border:1px solid var(--line);background:transparent;border-radius:12px;padding:8px 0;font-weight:700;cursor:pointer}
+  .tabs button[aria-pressed=true]{background:var(--candle);color:var(--ink-on-candle);border-color:var(--candle)}
+  .counter .btn.ghost{padding-inline:16px}
   .hint{border-left:3px solid var(--candle);padding:6px 12px;background:rgba(242,180,65,.08);border-radius:0 10px 10px 0}
   .warn{color:var(--hard);font-weight:700}
   details{border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--panel)}
@@ -207,48 +211,49 @@ function home(){
 
 // ---------- Historia ----------
 function start(d){
-  g = {d, story:pick(d), asked:0, hints:0, confirm:false};
+  g = {d, story:pick(d), asked:0, hints:0, confirm:false, revealed:false, view:'story'};
   storyScreen();
 }
 function storyScreen(){
   const L = LEVELS[g.d], left = L.limit ? L.limit - g.asked : null, out = L.limit && left<=0;
-  const hintsMax = Math.min(L.hints, g.story.h.length);
-  show(`<div class="stack"><div style="display:flex;justify-content:space-between;align-items:center">${pill(g.d)}<span class="muted">Narrador: tú</span></div></div>
-  <div class="story"><div class="eyebrow">${esc(g.story.t)}</div><p class="text">${esc(g.story.s)}</p></div>
+  const hintsMax = Math.min(L.hints, g.story.h.length), onSol = g.revealed && g.view==='solution';
+  const card = onSol
+    ? `<div class="story solution"><div class="eyebrow">Solución · solo para el narrador</div><p class="text">${esc(g.story.a)}</p></div>`
+    : `<div class="story"><div class="eyebrow">${esc(g.story.t)}</div><p class="text">${esc(g.story.s)}</p></div>`;
+  show(`<div style="display:flex;justify-content:space-between;align-items:center">${pill(g.d)}<span class="muted">${esc(g.story.t)}</span></div>
+  ${g.revealed ? `<div class="tabs"><button data-v="story" aria-pressed="${!onSol}">Historia</button><button data-v="solution" aria-pressed="${onSol}">Solución</button></div>` : ''}
+  ${card}
   <div class="counter">
     <div class="num"><span class="eyebrow">Preguntas</span><b>${g.asked}${L.limit?` / ${L.limit}`:''}</b></div>
-    <button class="btn" id="q" ${out?'disabled':''}>+1</button>
+    <button class="btn ghost" id="minus" aria-label="Quitar una pregunta" ${g.asked<=0?'disabled':''}>−1</button>
+    <button class="btn" id="q" aria-label="Sumar una pregunta" ${out?'disabled':''}>+1</button>
   </div>
   ${out ? '<p class="warn">Se acabaron las preguntas. ¡Toca arriesgar una respuesta final!</p>' : ''}
-  ${g.story.h.slice(0,g.hints).map(h=>`<div class="hint">💡 ${esc(h)}</div>`).join('')}
-  <button class="btn ghost" id="hint" ${g.hints>=hintsMax?'disabled':''}>Pedir pista (${hintsMax-g.hints} ${hintsMax-g.hints===1?'restante':'restantes'})</button>
+  ${onSol ? '' : g.story.h.slice(0,g.hints).map(h=>`<div class="hint">💡 ${esc(h)}</div>`).join('')}
+  ${onSol ? '' : `<button class="btn ghost" id="hint" ${g.hints>=hintsMax?'disabled':''}>Pedir pista (${hintsMax-g.hints} ${hintsMax-g.hints===1?'restante':'restantes'})</button>`}
   <div class="grow"></div>
-  <button class="btn" id="reveal">${g.revealed ? 'Volver a ver la solución' : g.confirm ? 'Pulsa otra vez: que nadie mire' : 'Revelar solución'}</button>
-  <button class="btn ghost" id="skip">Cambiar de historia</button>`);
-  document.getElementById('q').onclick = () => { g.asked++; storyScreen(); };
-  document.getElementById('hint').onclick = () => { g.hints++; storyScreen(); };
-  document.getElementById('skip').onclick = () => start(g.d);
-  document.getElementById('reveal').onclick = () => {
-    if (g.revealed) solutionScreen();
-    else if (!g.confirm){ g.confirm = true; storyScreen(); setTimeout(() => { if (g && g.confirm && !g.revealed){ g.confirm = false; if (document.getElementById('reveal')) storyScreen(); } }, 4000); }
-    else { g.revealed = true; g.confirm = false; solutionScreen(); }
+  ${onSol
+    ? `<p class="muted" style="text-align:center">¿Lo han adivinado ya?</p>
+       <button class="btn" id="yes">¡Lo resolvimos!</button><button class="btn ghost" id="no">No lo resolvimos</button>`
+    : g.revealed
+      ? `<button class="btn ghost" id="skip">Cambiar de historia</button>`
+      : `<button class="btn" id="reveal">${g.confirm ? 'Pulsa otra vez: que nadie mire' : 'Mirar la solución'}</button>
+         <button class="btn ghost" id="skip">Cambiar de historia</button>`}`);
+  const $ = id => document.getElementById(id);
+  $('q').onclick = () => { g.asked++; storyScreen(); };
+  $('minus').onclick = () => { g.asked--; storyScreen(); };
+  if ($('hint')) $('hint').onclick = () => { g.hints++; storyScreen(); };
+  if ($('skip')) $('skip').onclick = () => start(g.d);
+  app.querySelectorAll('[data-v]').forEach(t => t.onclick = () => { g.view = t.dataset.v; storyScreen(); });
+  if ($('reveal')) $('reveal').onclick = () => {
+    if (!g.confirm){ g.confirm = true; storyScreen(); setTimeout(() => { if (g && g.confirm && !g.revealed){ g.confirm = false; if ($('reveal')) storyScreen(); } }, 4000); }
+    else { g.revealed = true; g.confirm = false; g.view = 'solution'; storyScreen(); }
   };
+  const done = won => { score[g.d][1]++; if (won) score[g.d][0]++; store.set('darkstories-marcador', score); afterScreen(won); };
+  if ($('yes')) $('yes').onclick = () => done(true);
+  if ($('no')) $('no').onclick = () => done(false);
 }
 
-// ---------- Solución ----------
-function solutionScreen(){
-  show(`<div style="display:flex;justify-content:space-between;align-items:center">${pill(g.d)}<span class="muted">${g.asked} ${g.asked===1?'pregunta':'preguntas'}</span></div>
-  <div class="story solution"><div class="eyebrow">${esc(g.story.t)} · Solución</div><p class="text">${esc(g.story.a)}</p></div>
-  <p class="muted" style="text-align:center">¿Lo habíais adivinado?</p>
-  <div class="grow"></div>
-  <button class="btn" id="yes">¡Lo resolvimos!</button>
-  <button class="btn ghost" id="no">No lo resolvimos</button>
-  <button class="btn ghost" id="back">← Volver a la historia</button>`);
-  document.getElementById('back').onclick = storyScreen;
-  const done = won => { score[g.d][1]++; if (won) score[g.d][0]++; store.set('darkstories-marcador', score); afterScreen(won); };
-  document.getElementById('yes').onclick = () => done(true);
-  document.getElementById('no').onclick = () => done(false);
-}
 function afterScreen(won){
   const [w,p] = score[g.d];
   show(`<div class="stack" style="margin-top:20vh;text-align:center"><div style="font-size:3rem">${won?'🏆':'🌑'}</div>
