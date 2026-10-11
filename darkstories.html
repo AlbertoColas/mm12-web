@@ -223,14 +223,15 @@ function storyScreen(){
   ${g.story.h.slice(0,g.hints).map(h=>`<div class="hint">💡 ${esc(h)}</div>`).join('')}
   <button class="btn ghost" id="hint" ${g.hints>=hintsMax?'disabled':''}>Pedir pista (${hintsMax-g.hints} ${hintsMax-g.hints===1?'restante':'restantes'})</button>
   <div class="grow"></div>
-  <button class="btn" id="reveal">${g.confirm ? 'Pulsa otra vez: que nadie mire' : 'Revelar solución'}</button>
+  <button class="btn" id="reveal">${g.revealed ? 'Volver a ver la solución' : g.confirm ? 'Pulsa otra vez: que nadie mire' : 'Revelar solución'}</button>
   <button class="btn ghost" id="skip">Cambiar de historia</button>`);
   document.getElementById('q').onclick = () => { g.asked++; storyScreen(); };
   document.getElementById('hint').onclick = () => { g.hints++; storyScreen(); };
   document.getElementById('skip').onclick = () => start(g.d);
   document.getElementById('reveal').onclick = () => {
-    if (!g.confirm){ g.confirm = true; storyScreen(); setTimeout(() => { if (g && g.confirm && !g.revealed){ g.confirm = false; if (document.getElementById('reveal')) storyScreen(); } }, 4000); }
-    else { g.revealed = true; solutionScreen(); }
+    if (g.revealed) solutionScreen();
+    else if (!g.confirm){ g.confirm = true; storyScreen(); setTimeout(() => { if (g && g.confirm && !g.revealed){ g.confirm = false; if (document.getElementById('reveal')) storyScreen(); } }, 4000); }
+    else { g.revealed = true; g.confirm = false; solutionScreen(); }
   };
 }
 
@@ -241,7 +242,9 @@ function solutionScreen(){
   <p class="muted" style="text-align:center">¿Lo habíais adivinado?</p>
   <div class="grow"></div>
   <button class="btn" id="yes">¡Lo resolvimos!</button>
-  <button class="btn ghost" id="no">No lo resolvimos</button>`);
+  <button class="btn ghost" id="no">No lo resolvimos</button>
+  <button class="btn ghost" id="back">← Volver a la historia</button>`);
+  document.getElementById('back').onclick = storyScreen;
   const done = won => { score[g.d][1]++; if (won) score[g.d][0]++; store.set('darkstories-marcador', score); afterScreen(won); };
   document.getElementById('yes').onclick = () => done(true);
   document.getElementById('no').onclick = () => done(false);
