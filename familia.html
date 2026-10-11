@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Pasa el móvil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  /* Juego de familia por turnos: pasar el móvil, sacar carta (pregunta, mímica o reto) y sumar puntos. */
+  :root{
+    --bg:#1d1b4d; --card:#ffffff; --ink:#1d1b4d; --muted:#6b6a8f;
+    --yellow:#ffd23f; --teal:#2ec4b6; --pink:#ff5d8f; --orange:#ff9f1c; --good:#2bb673; --bad:#e5484d;
+    --font:'Baloo 2','Nunito','Trebuchet MS',system-ui,sans-serif;
+    color-scheme:light;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:#fff;font-family:var(--font);font-size:18px;
+    -webkit-user-select:none;user-select:none}
+  body{padding-inline:16px;padding-block:16px}
+  main{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:16px;min-height:calc(100dvh - 32px)}
+  h1,h2,p{margin:0}
+  h1{font-size:2.4rem;line-height:1;font-weight:800;text-wrap:balance}
+  h2{font-size:1.7rem;line-height:1.1;font-weight:800;text-wrap:balance}
+  .muted{color:#c9c8ee}
+  .grow{flex:1}
+  .center{text-align:center}
+  button,input{font:inherit}
+  .btn{border:0;border-radius:18px;padding:14px 18px;font-weight:800;font-size:1.15rem;color:var(--ink);background:var(--yellow);
+    box-shadow:0 5px 0 rgba(0,0,0,.25);cursor:pointer;width:100%}
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+  .btn.ghost{background:transparent;color:#fff;box-shadow:none;border:2px solid rgba(255,255,255,.35)}
+  .btn.good{background:var(--good);color:#fff}
+  .btn.bad{background:var(--bad);color:#fff}
+  .btn.small{width:auto;padding:8px 14px;font-size:1rem}
+  .btn:disabled{opacity:.55;cursor:default}
+  .card{background:var(--card);color:var(--ink);border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .tag{align-self:flex-start;border-radius:999px;padding:2px 14px;font-weight:800;font-size:.95rem;color:#fff;letter-spacing:.04em;text-transform:uppercase}
+  .row{display:flex;gap:8px;align-items:center}
+  .row input{flex:1;min-width:0;border:3px solid #e3e2f5;border-radius:14px;padding:10px 14px;font-weight:700;color:var(--ink);background:#fff}
+  .row input:focus{outline:3px solid var(--yellow);border-color:var(--yellow)}
+  .x{border:0;background:#f0eff9;color:var(--muted);width:44px;height:44px;border-radius:14px;font-size:1.3rem;font-weight:800;cursor:pointer}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;border:3px solid #e3e2f5;background:#fff;color:var(--ink);border-radius:14px;padding:8px 0;font-weight:800;font-size:1.1rem;cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .label{font-weight:800;color:var(--muted);font-size:.9rem;text-transform:uppercase;letter-spacing:.06em}
+  .scores{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border-radius:999px;padding:4px 12px;background:rgba(255,255,255,.12);font-weight:700;font-size:.95rem}
+  .chip.on{background:var(--yellow);color:var(--ink)}
+  .big{font-size:3.2rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .question{font-size:1.6rem;font-weight:800;line-height:1.15}
+  .opts{display:flex;flex-direction:column;gap:10px}
+  .opt{border:3px solid #e3e2f5;background:#fff;color:var(--ink);border-radius:16px;padding:12px 14px;font-weight:700;font-size:1.15rem;text-align:left;cursor:pointer}
+  .opt.ok{background:var(--good);border-color:var(--good);color:#fff}
+  .opt.ko{background:var(--bad);border-color:var(--bad);color:#fff}
+  .word{font-size:2.4rem;font-weight:800;text-align:center;padding:12px 0;text-wrap:balance}
+  .stack{display:flex;flex-direction:column;gap:10px}
+  .rank{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;background:#f3f2fc;font-weight:800}
+  .rank.first{background:var(--yellow)}
+  .rank .pos{font-size:1.6rem;width:2rem;text-align:center}
+  .rank .nm{flex:1;min-width:0;overflow-wrap:anywhere}
+  .rank .pts{font-variant-numeric:tabular-nums}
+  .msg{font-weight:800;font-size:1.2rem}
+  .msg.good{color:var(--good)} .msg.bad{color:var(--bad)}
+  @media (prefers-reduced-motion:no-preference){ .pop{animation:pop .25s ease-out} @keyframes pop{from{transform:scale(.94);opacity:.4}to{transform:none;opacity:1}} }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const TRIVIA = [
+  ['¿Cuál es el planeta más grande del sistema solar?', ['Júpiter','Saturno','Marte','Tierra'], 0],
+  ['¿Cuántas patas tiene una araña?', ['6','8','10','12'], 1],
+  ['¿Cuál es la capital de Francia?', ['Lyon','Marsella','París','Niza'], 2],
+  ['¿Qué color sale al mezclar azul y amarillo?', ['Verde','Naranja','Morado','Marrón'], 0],
+  ['¿Cuál es el animal terrestre más rápido?', ['León','Guepardo','Caballo','Avestruz'], 1],
+  ['¿Cuántos jugadores de un equipo de fútbol hay a la vez en el campo?', ['9','10','11','12'], 2],
+  ['¿Cuál es el océano más grande?', ['Atlántico','Índico','Ártico','Pacífico'], 3],
+  ['¿Quién pintó «Las Meninas»?', ['Goya','Velázquez','Picasso','Dalí'], 1],
+  ['¿Cuántos días tiene un año bisiesto?', ['364','365','366','367'], 2],
+  ['¿Cuál es el río más largo de la península ibérica?', ['Ebro','Duero','Guadalquivir','Tajo'], 3],
+  ['¿Qué gas necesitamos respirar para vivir?', ['Oxígeno','Helio','Nitrógeno','Hidrógeno'], 0],
+  ['¿Cuántos colores tiene el arcoíris?', ['5','6','7','8'], 2],
+  ['¿Cuál es el animal más grande del mundo?', ['Elefante','Ballena azul','Jirafa','Tiburón blanco'], 1],
+  ['¿En qué continente está Egipto?', ['Asia','Europa','África','Oceanía'], 2],
+  ['¿Cuántos lados tiene un hexágono?', ['5','6','7','8'], 1],
+  ['¿Qué planeta se conoce como el planeta rojo?', ['Venus','Mercurio','Neptuno','Marte'], 3],
+  ['¿Quién escribió «Don Quijote de la Mancha»?', ['Lope de Vega','Cervantes','Quevedo','Bécquer'], 1],
+  ['¿Cuál es el hueso más largo del cuerpo humano?', ['Fémur','Tibia','Húmero','Costilla'], 0],
+  ['¿Cuántos minutos hay en una hora y media?', ['80','90','100','120'], 1],
+  ['¿Qué instrumento tiene teclas blancas y negras?', ['Violín','Trompeta','Piano','Flauta'], 2],
+  ['¿Cuál es la capital de Italia?', ['Roma','Milán','Venecia','Nápoles'], 0],
+  ['¿Qué país tiene forma de bota?', ['España','Grecia','Portugal','Italia'], 3],
+  ['¿Cuántos huesos tiene aproximadamente un adulto?', ['106','206','306','406'], 1],
+  ['¿Qué metal es líquido a temperatura ambiente?', ['Mercurio','Hierro','Plata','Cobre'], 0],
+  ['¿En qué año llegó el ser humano a la Luna?', ['1959','1965','1969','1975'], 2],
+  ['¿Cuál es el país más grande del mundo?', ['China','Canadá','Estados Unidos','Rusia'], 3],
+  ['¿Qué animal es el rey de la selva en los cuentos?', ['Tigre','León','Oso','Lobo'], 1],
+  ['¿Cuántas estaciones tiene el año?', ['3','4','5','6'], 1],
+];
+const MIMICA = ['Elefante','Pizza','Bailar flamenco','Dormir','Futbolista','Cocinero','Astronauta','Mono','Lavarse los dientes',
+  'Pescar','Tocar la guitarra','Conducir un coche','Montar en bici','Pingüino','Peluquero','Nadar','Payaso','Robot','Dinosaurio',
+  'Jugar al tenis','Gallina','Surfear','Tomar un helado','Médico','Mago','Hacer una tarta','Serpiente','Boxeador','Fantasma','Esquiar'];
+const RETOS = [
+  'Di tres veces seguidas sin fallar: «Tres tristes tigres tragaban trigo en un trigal».',
+  'Cuenta un chiste a la familia. ¡Tiene que hacer reír a alguien!',
+  'Aguanta 20 segundos a la pata coja.',
+  'Nombra 5 animales en 10 segundos.',
+  'Pon la cara más graciosa que puedas y aguanta 10 segundos sin reírte.',
+  'Nombra 5 países de Europa en 10 segundos.',
+  'Cuenta del 20 al 0 de dos en dos sin equivocarte.',
+  'Abraza a la persona de tu derecha y dile algo bonito.',
+  'Haz 10 sentadillas contando en voz alta.',
+  'Imita a alguien de la familia sin decir su nombre. Los demás adivinan quién es.',
+  'Nombra 5 frutas en 8 segundos.',
+  'Habla con voz de robot durante 15 segundos.',
+  'Cuenta lo que hiciste ayer en exactamente 3 frases.',
+  'Di el abecedario al revés desde la Z hasta la T.',
+  'Canta el estribillo de una canción. Los demás adivinan cuál es.',
+  'Nombra 5 colores sin repetir ninguno en 6 segundos.',
+];
+const TYPES = {
+  trivia: {label:'Pregunta', color:'var(--teal)'},
+  mimica: {label:'Mímica',   color:'var(--pink)'},
+  reto:   {label:'Reto',     color:'var(--orange)'},
+};
+
+const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const deck = arr => { let d=[]; return () => { if(!d.length) d = shuffle(arr.slice()); return d.pop(); }; };
+const nextTrivia = deck(TRIVIA), nextMimica = deck(MIMICA), nextReto = deck(RETOS);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const S = { screen:'setup', names:['Jugador 1','Jugador 2'], rounds:3, players:[], turn:0, card:null };
+const app = document.getElementById('app');
+let timer = null;
+const stopTimer = () => { if (timer){ clearInterval(timer); timer = null; } };
+const cur = () => S.players[S.turn % S.players.length];
+const total = () => S.rounds * S.players.length;
+const round = () => Math.floor(S.turn / S.players.length) + 1;
+
+function scoreChips(){
+  return '<div class="scores">' + S.players.map(p =>
+    `<span class="chip ${p===cur()?'on':''}">${esc(p.name)} · ${p.score}</span>`).join('') + '</div>';
+}
+function show(html){ stopTimer(); app.innerHTML = html; app.firstElementChild && app.firstElementChild.classList.add('pop'); window.scrollTo(0,0); }
+
+// ---------- Preparar partida ----------
+function setup(){
+  S.screen = 'setup';
+  show(`<div class="stack">
+    <h1>🎲 Pasa el móvil</h1>
+    <p class="muted">Pregunta, mímica o reto: cada turno toca una carta. ¡Gana quien más puntos sume!</p>
+  </div>
+  <div class="card">
+    <div class="label">Jugadores (2 a 6)</div>
+    <div class="stack" id="names">${S.names.map((n,i)=>`<div class="row">
+      <input id="name-${i}" value="${esc(n)}" maxlength="14" aria-label="Nombre del jugador ${i+1}">
+      <button class="x" data-del="${i}" aria-label="Quitar jugador ${i+1}" ${S.names.length<=2?'disabled':''}>×</button></div>`).join('')}</div>
+    <button class="btn small" id="add" ${S.names.length>=6?'disabled':''}>+ Añadir jugador</button>
+    <div class="label">Rondas (turnos por jugador)</div>
+    <div class="seg">${[2,3,5,8].map(r=>`<button data-r="${r}" aria-pressed="${r===S.rounds}">${r}</button>`).join('')}</div>
+  </div>
+  <div class="grow"></div>
+  <button class="btn" id="go">¡A jugar!</button>`);
+  S.names.forEach((_,i)=>{ document.getElementById('name-'+i).addEventListener('input', e => { S.names[i] = e.target.value; }); });
+  app.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { S.names.splice(+b.dataset.del,1); setup(); });
+  document.getElementById('add').onclick = () => { S.names.push('Jugador '+(S.names.length+1)); setup(); };
+  app.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { S.rounds = +b.dataset.r; setup(); });
+  document.getElementById('go').onclick = () => {
+    S.players = S.names.map((n,i)=>({name:(n.trim()||'Jugador '+(i+1)), score:0}));
+    S.turn = 0; turnScreen();
+  };
+}
+
+// ---------- Turno ----------
+function turnScreen(){
+  S.screen = 'turn';
+  show(`<div class="stack">${scoreChips()}<p class="muted">Ronda ${round()} de ${S.rounds}</p></div>
+  <div class="grow center" style="display:flex;flex-direction:column;justify-content:center;gap:12px">
+    <p class="muted">Le toca a</p>
+    <div class="big" style="overflow-wrap:anywhere">${esc(cur().name)}</div>
+    <p class="muted">Coge el móvil y saca una carta</p>
+  </div>
+  <button class="btn" id="draw">🃏 Sacar carta</button>`);
+  document.getElementById('draw').onclick = drawCard;
+}
+function drawCard(){
+  const r = Math.random();
+  const type = r < .4 ? 'trivia' : r < .7 ? 'mimica' : 'reto';
+  if (type==='trivia'){
+    const [q,opts,ans] = nextTrivia();
+    const order = shuffle(opts.map((o,i)=>({o,ok:i===ans})));
+    S.card = {type, q, order};
+  } else if (type==='mimica') S.card = {type, word:nextMimica()};
+  else S.card = {type, text:nextReto()};
+  cardScreen();
+}
+const tag = t => `<span class="tag" style="background:${TYPES[t].color}">${TYPES[t].label}</span>`;
+const award = (p,n) => { p.score += n; };
+
+function cardScreen(){
+  const c = S.card;
+  if (c.type==='trivia') return triviaScreen(c);
+  if (c.type==='mimica') return mimicaIntro(c);
+  retoScreen(c);
+}
+
+// Pregunta
+function triviaScreen(c){
+  S.screen = 'card';
+  show(`<div class="stack">${scoreChips()}</div>
+  <div class="card">${tag('trivia')}<div class="question">${esc(c.q)}</div>
+    <div class="opts">${c.order.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o.o)}</button>`).join('')}</div>
+    <div id="res"></div>
+  </div>
+  <div class="grow"></div>`);
+  app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    const i = +b.dataset.i, ok = c.order[i].ok;
+    app.querySelectorAll('.opt').forEach((x,j)=>{ x.disabled = true; if (c.order[j].ok) x.classList.add('ok'); });
+    if (!ok) b.classList.add('ko'); else award(cur(),2);
+    document.getElementById('res').innerHTML = `<p class="msg ${ok?'good':'bad'}">${ok?'¡Correcto! +2 puntos':'¡Uy! Era la verde.'}</p>
+      <button class="btn" id="next" style="margin-top:12px">Siguiente</button>`;
+    document.getElementById('next').onclick = nextTurn;
+  });
+}
+
+// Mímica
+function mimicaIntro(c){
+  S.screen = 'card';
+  show(`<div class="stack">${scoreChips()}</div>
+  <div class="card">${tag('mimica')}
+    <h2>${esc(cur().name)}, haz mímica</h2>
+    <p>Solo puedes mirar tú. Sin hablar: ¡que los demás adivinen la palabra!</p>
+    <button class="btn" id="see">👀 Ver mi palabra</button>
+  </div><div class="grow"></div>`);
+  document.getElementById('see').onclick = () => mimicaPlay(c);
+}
+function mimicaPlay(c){
+  const others = S.players.filter(p => p!==cur());
+  show(`<div class="stack">${scoreChips()}</div>
+  <div class="card">${tag('mimica')}
+    <div class="word" id="word">${esc(c.word)}</div>
+    <div class="center big" id="clock">60</div>
+    <button class="btn" id="start">▶ Empezar (60 s)</button>
+    <div class="stack" id="who" hidden>
+      <div class="label">¿Quién lo adivinó?</div>
+      ${others.map((p,i)=>`<button class="btn good" data-i="${i}">${esc(p.name)}</button>`).join('')}
+      <button class="btn ghost" style="color:var(--ink);border-color:#e3e2f5" id="nobody">Nadie</button>
+    </div>
+  </div><div class="grow"></div>`);
+  const clock = document.getElementById('clock');
+  const finish = () => {
+    stopTimer(); clock.textContent = '0'; if (navigator.vibrate) navigator.vibrate(200);
+    document.getElementById('word').insertAdjacentHTML('afterend','<p class="msg bad center">¡Se acabó el tiempo!</p>');
+  };
+  document.getElementById('start').onclick = e => {
+    e.target.hidden = true; document.getElementById('who').hidden = false;
+    const end = Date.now()+60000;
+    timer = setInterval(() => {
+      const left = Math.ceil((end-Date.now())/1000);
+      if (left<=0) finish(); else clock.textContent = left;
+    }, 250);
+  };
+  app.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { award(cur(),2); award(others[+b.dataset.i],2); nextTurn(); });
+  document.getElementById('nobody').onclick = nextTurn;
+}
+
+// Reto
+function retoScreen(c){
+  S.screen = 'card';
+  show(`<div class="stack">${scoreChips()}</div>
+  <div class="card">${tag('reto')}
+    <h2>${esc(cur().name)}, tu reto</h2>
+    <div class="question">${esc(c.text)}</div>
+    <div class="label">Que decidan los demás</div>
+    <button class="btn good" id="ok">¡Lo logró! +2</button>
+    <button class="btn bad" id="ko">No lo logró</button>
+  </div><div class="grow"></div>`);
+  document.getElementById('ok').onclick = () => { award(cur(),2); nextTurn(); };
+  document.getElementById('ko').onclick = nextTurn;
+}
+
+// ---------- Siguiente / final ----------
+function nextTurn(){
+  S.turn++;
+  if (S.turn >= total()) finalScreen(); else turnScreen();
+}
+function finalScreen(){
+  S.screen = 'final';
+  const sorted = S.players.slice().sort((a,b)=>b.score-a.score);
+  const top = sorted[0].score, winners = sorted.filter(p=>p.score===top);
+  const medal = ['🥇','🥈','🥉'];
+  let pos = 0;
+  show(`<div class="stack center"><div class="big">🏆</div>
+    <h1>${winners.length>1 ? '¡Empate!' : '¡Gana '+esc(winners[0].name)+'!'}</h1></div>
+  <div class="stack">${sorted.map((p,i)=>{
+    if (i>0 && p.score<sorted[i-1].score) pos = i;
+    return `<div class="rank ${p.score===top?'first':''}" style="color:var(--ink)"><span class="pos">${medal[pos]||pos+1}</span>
+      <span class="nm">${esc(p.name)}</span><span class="pts">${p.score} pts</span></div>`; }).join('')}</div>
+  <div class="grow"></div>
+  <button class="btn" id="again">Jugar otra vez</button>
+  <button class="btn ghost" id="change">Cambiar jugadores</button>`);
+  document.getElementById('again').onclick = () => { S.players.forEach(p=>p.score=0); S.turn=0; turnScreen(); };
+  document.getElementById('change').onclick = setup;
+}
+setup();
+</script>
+</body>
+</html>
