@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
-  /* Juego cooperativo de familia: pasar el móvil, sacar carta (pregunta, mímica o reto) y sumar puntos entre todos. */
+  /* Juego cooperativo de familia: pasar el móvil y responder preguntas de dificultad creciente entre todos. */
   :root{
     --bg:#1d1b4d; --card:#ffffff; --ink:#1d1b4d; --muted:#6b6a8f;
     --yellow:#ffd23f; --teal:#2ec4b6; --pink:#ff5d8f; --orange:#ff9f1c; --good:#2bb673; --bad:#e5484d;
@@ -61,6 +61,7 @@
   .rank .pos{font-size:1.6rem;width:2rem;text-align:center}
   .rank .nm{flex:1;min-width:0;overflow-wrap:anywhere}
   .rank .pts{font-variant-numeric:tabular-nums}
+  .expl{margin:0;background:#f3f2fc;border-radius:14px;padding:12px 14px;font-size:1.05rem;line-height:1.3;color:var(--ink)}
   .msg{font-weight:800;font-size:1.2rem}
   .msg.good{color:var(--good)} .msg.bad{color:var(--bad)}
   @media (prefers-reduced-motion:no-preference){ .pop{animation:pop .25s ease-out} @keyframes pop{from{transform:scale(.94);opacity:.4}to{transform:none;opacity:1}} }
@@ -69,103 +70,84 @@
 <body>
 <main id="app"></main>
 <script>
-// [pregunta, opciones, índice correcto, nivel de dificultad 1-4]
+// [categoría, pregunta, opciones, índice correcto, explicación, nivel 1-4]. Con 2 opciones es de verdadero o falso.
+const VF = ['Verdadero','Falso'];
 const TRIVIA = [
   // Nivel 1
-  ['¿Cuántas patas tiene una araña?', ['6','8','10','12'], 1, 1],
-  ['¿Cuál es la capital de Francia?', ['Lyon','Marsella','París','Niza'], 2, 1],
-  ['¿Qué color sale al mezclar azul y amarillo?', ['Verde','Naranja','Morado','Marrón'], 0, 1],
-  ['¿Cuántos jugadores de un equipo de fútbol hay a la vez en el campo?', ['9','10','11','12'], 2, 1],
-  ['¿Cuántos colores tiene el arcoíris?', ['5','6','7','8'], 2, 1],
-  ['¿Cuántas estaciones tiene el año?', ['3','4','5','6'], 1, 1],
-  ['¿Cuántos lados tiene un hexágono?', ['5','6','7','8'], 1, 1],
-  ['¿Qué instrumento tiene teclas blancas y negras?', ['Violín','Trompeta','Piano','Flauta'], 2, 1],
-  ['¿Qué planeta se conoce como el planeta rojo?', ['Venus','Mercurio','Neptuno','Marte'], 3, 1],
-  ['¿Qué gas necesitamos respirar para vivir?', ['Oxígeno','Helio','Nitrógeno','Hidrógeno'], 0, 1],
+  ['Naturaleza','Verdadero o falso: las ballenas son peces.',VF,1,'Son mamíferos: respiran aire con pulmones y alimentan a sus crías con leche.',1],
+  ['Geografía','¿Cuál es la capital de Francia?',['Lyon','Marsella','París','Niza'],2,'París está a orillas del río Sena y allí se encuentra la Torre Eiffel.',1],
+  ['Ciencia','¿Qué color sale al mezclar azul y amarillo?',['Verde','Naranja','Morado','Marrón'],0,'Azul y amarillo son colores primarios de pintura; juntos dan verde.',1],
+  ['Deportes','¿Cuántos jugadores de un equipo de fútbol están a la vez en el campo?',['9','10','11','12'],2,'Cada equipo juega con 11, contando al portero.',1],
+  ['Naturaleza','¿Cuántas patas tiene una araña?',['6','8','10','12'],1,'Las arañas son arácnidos y tienen 8 patas. Los insectos, en cambio, tienen 6.',1],
+  ['Ciencia','Verdadero o falso: el Sol es una estrella.',VF,0,'Es la estrella más cercana a la Tierra y nos da luz y calor.',1],
+  ['Arte y letras','¿Qué instrumento tiene teclas blancas y negras?',['Violín','Trompeta','Piano','Flauta'],2,'Al pulsar una tecla, un martillito golpea unas cuerdas y suena la nota.',1],
+  ['Geografía','¿Qué planeta se conoce como el planeta rojo?',['Venus','Mercurio','Neptuno','Marte'],3,'El óxido de hierro de su superficie le da ese color rojizo.',1],
+  ['Ciencia','¿Qué gas necesitamos respirar para vivir?',['Oxígeno','Helio','Nitrógeno','Hidrógeno'],0,'Los pulmones lo captan y la sangre lo reparte por todo el cuerpo.',1],
+  ['Naturaleza','¿Cuál es el animal terrestre más rápido?',['León','Guepardo','Caballo','Avestruz'],1,'El guepardo alcanza unos 100 km/h, pero solo en carreras cortas.',1],
+  ['Naturaleza','¿Cuál de estos animales NO es un mamífero?',['Delfín','Murciélago','Pingüino','Perro'],2,'El pingüino es un ave: tiene plumas y pone huevos, aunque no vuela.',1],
+  ['Geografía','Verdadero o falso: España está en el continente africano.',VF,1,'España está en Europa, aunque Ceuta y Melilla están en la costa africana.',1],
   // Nivel 2
-  ['¿Cuál es el planeta más grande del sistema solar?', ['Júpiter','Saturno','Marte','Tierra'], 0, 2],
-  ['¿Quién pintó «Las Meninas»?', ['Goya','Velázquez','Picasso','Dalí'], 1, 2],
-  ['¿Cuántos días tiene un año bisiesto?', ['364','365','366','367'], 2, 2],
-  ['¿Cuál es el río más largo de la península ibérica?', ['Ebro','Duero','Guadalquivir','Tajo'], 3, 2],
-  ['¿Quién escribió «Don Quijote de la Mancha»?', ['Lope de Vega','Cervantes','Quevedo','Bécquer'], 1, 2],
-  ['¿Cuál es el hueso más largo del cuerpo humano?', ['Fémur','Tibia','Húmero','Costilla'], 0, 2],
-  ['¿Cuántos huesos tiene aproximadamente un adulto?', ['106','206','306','406'], 1, 2],
-  ['¿Qué metal es líquido a temperatura ambiente?', ['Mercurio','Hierro','Plata','Cobre'], 0, 2],
-  ['¿En qué año llegó el ser humano a la Luna?', ['1959','1965','1969','1975'], 2, 2],
-  ['¿Cuál es el país más grande del mundo?', ['China','Canadá','Estados Unidos','Rusia'], 3, 2],
-  ['¿En qué año llegó Colón a América?', ['1392','1492','1592','1692'], 1, 2],
-  ['¿Cuál es el órgano más grande del cuerpo humano?', ['El hígado','El corazón','La piel','El pulmón'], 2, 2],
+  ['Arte y letras','¿Quién pintó «Las Meninas»?',['Goya','Velázquez','Picasso','Dalí'],1,'Velázquez la pintó en 1656 y hoy se conserva en el Museo del Prado.',2],
+  ['Historia','¿En qué año llegó Colón a América?',['1392','1492','1592','1692'],1,'Llegó el 12 de octubre de 1492 con tres naves: la Pinta, la Niña y la Santa María.',2],
+  ['Ciencia','¿Cuál es el hueso más largo del cuerpo humano?',['Fémur','Tibia','Húmero','Costilla'],0,'El fémur está en el muslo y es también el hueso más fuerte.',2],
+  ['Geografía','¿Cuál es el río más largo de la península ibérica?',['Ebro','Duero','Guadalquivir','Tajo'],3,'El Tajo mide unos 1.007 km y desemboca en el Atlántico, cerca de Lisboa.',2],
+  ['Arte y letras','¿Quién escribió «Don Quijote de la Mancha»?',['Lope de Vega','Cervantes','Quevedo','Bécquer'],1,'Miguel de Cervantes publicó la primera parte en 1605.',2],
+  ['Ciencia','¿Cuántos huesos tiene aproximadamente un adulto?',['106','206','306','406'],1,'Los bebés nacen con unos 300 huesos, que se van uniendo al crecer.',2],
+  ['Ciencia','Verdadero o falso: en una tormenta vemos el rayo antes de oír el trueno.',VF,0,'La luz viaja muchísimo más rápido que el sonido, así que llega antes.',2],
+  ['Historia','¿En qué año llegó el ser humano a la Luna?',['1959','1965','1969','1975'],2,'Fue la misión Apolo 11 de la NASA, con Neil Armstrong y Buzz Aldrin.',2],
+  ['Geografía','¿Cuál es el país más grande del mundo?',['China','Canadá','Estados Unidos','Rusia'],3,'Rusia ocupa más de 17 millones de km², casi el doble que Canadá.',2],
+  ['Ciencia','¿Cuál es el órgano más grande del cuerpo humano?',['El hígado','El corazón','La piel','El pulmón'],2,'La piel cubre todo el cuerpo y en un adulto pesa unos 4 kg.',2],
+  ['Naturaleza','¿Cuál de estos animales NO es un insecto?',['Mariposa','Hormiga','Araña','Abeja'],2,'La araña es un arácnido: tiene 8 patas y el cuerpo en dos partes, no en tres.',2],
+  ['Deportes','¿Cada cuántos años se celebran los Juegos Olímpicos de verano?',['2','3','4','5'],2,'Cada cuatro años, un periodo que los griegos llamaban olimpiada.',2],
+  ['Geografía','¿Cuál es el océano más grande?',['Atlántico','Índico','Ártico','Pacífico'],3,'El Pacífico ocupa casi un tercio de la superficie de la Tierra.',2],
   // Nivel 3
-  ['¿Cuál es el símbolo químico del oro?', ['Ag','Au','Fe','Go'], 1, 3],
-  ['¿Quién compuso «Las cuatro estaciones»?', ['Mozart','Beethoven','Vivaldi','Bach'], 2, 3],
-  ['¿Cuál es la capital de Australia?', ['Sídney','Melbourne','Canberra','Perth'], 2, 3],
-  ['¿En qué año cayó el Muro de Berlín?', ['1979','1985','1989','1991'], 2, 3],
-  ['¿Cuántos corazones tiene un pulpo?', ['1','2','3','8'], 2, 3],
-  ['¿Cuál es la montaña más alta de España?', ['Mulhacén','Aneto','Teide','Veleta'], 2, 3],
-  ['¿Cuál es el hueso más pequeño del cuerpo humano?', ['Yunque','Estribo','Martillo','Falange'], 1, 3],
-  ['¿Quién pintó «La persistencia de la memoria»?', ['Miró','Dalí','Picasso','Magritte'], 1, 3],
-  ['¿Cuál es la capital de Canadá?', ['Toronto','Vancouver','Montreal','Ottawa'], 3, 3],
-  ['¿Quién descubrió la penicilina?', ['Pasteur','Fleming','Curie','Koch'], 1, 3],
-  ['¿Quién escribió «Cien años de soledad»?', ['García Márquez','Vargas Llosa','Borges','Cortázar'], 0, 3],
-  ['¿Cuál es el desierto cálido más grande del mundo?', ['Gobi','Kalahari','Sáhara','Atacama'], 2, 3],
+  ['Ciencia','¿Cuál es el símbolo químico del oro?',['Ag','Au','Fe','Go'],1,'Au viene del latín «aurum», que significa oro. Ag es la plata.',3],
+  ['Arte y letras','¿Quién compuso «Las cuatro estaciones»?',['Mozart','Beethoven','Vivaldi','Bach'],2,'Son cuatro conciertos para violín del compositor veneciano Antonio Vivaldi.',3],
+  ['Geografía','¿Cuál es la capital de Australia?',['Sídney','Melbourne','Canberra','Perth'],2,'Se creó a propósito para evitar la rivalidad entre Sídney y Melbourne.',3],
+  ['Historia','¿En qué año cayó el Muro de Berlín?',['1979','1985','1989','1991'],2,'Cayó el 9 de noviembre de 1989 y Alemania se reunificó en 1990.',3],
+  ['Naturaleza','¿Cuántos corazones tiene un pulpo?',['1','2','3','8'],2,'Dos bombean la sangre a las branquias y el tercero la manda al resto del cuerpo.',3],
+  ['Geografía','¿Cuál es la montaña más alta de España?',['Mulhacén','Aneto','Teide','Veleta'],2,'El Teide mide 3.715 m y está en Tenerife. El Mulhacén es el más alto de la península.',3],
+  ['Ciencia','¿Cuál es el hueso más pequeño del cuerpo humano?',['Yunque','Estribo','Martillo','Falange'],1,'El estribo está en el oído medio y mide unos 3 mm.',3],
+  ['Arte y letras','¿Quién pintó «La persistencia de la memoria»?',['Miró','Dalí','Picasso','Magritte'],1,'Salvador Dalí la pintó en 1931; es famosa por sus relojes blandos.',3],
+  ['Geografía','¿Cuál es la capital de Canadá?',['Toronto','Vancouver','Montreal','Ottawa'],3,'Mucha gente piensa que es Toronto, pero la capital es Ottawa.',3],
+  ['Ciencia','¿Quién descubrió la penicilina?',['Pasteur','Fleming','Curie','Koch'],1,'Alexander Fleming la descubrió en 1928, en parte por casualidad.',3],
+  ['Arte y letras','¿Quién escribió «Cien años de soledad»?',['García Márquez','Vargas Llosa','Borges','Cortázar'],0,'El colombiano Gabriel García Márquez ganó el Nobel de Literatura en 1982.',3],
+  ['Ciencia','Verdadero o falso: en Venus un día dura más que un año.',VF,0,'Venus tarda unos 243 días terrestres en girar sobre sí mismo y unos 225 en dar la vuelta al Sol.',3],
+  ['Historia','Verdadero o falso: Cleopatra vivió más cerca de la llegada a la Luna que de la construcción de la Gran Pirámide.',VF,0,'La Gran Pirámide se levantó hacia el 2560 a. C.; Cleopatra vivió hace unos 2.000 años, mucho después.',3],
   // Nivel 4
-  ['¿Cuál es el elemento más abundante del universo?', ['Oxígeno','Hidrógeno','Helio','Carbono'], 1, 4],
-  ['¿En qué año comenzó la Revolución Francesa?', ['1689','1750','1789','1815'], 2, 4],
-  ['¿Cuál es el río más largo de Europa?', ['Danubio','Rin','Volga','Támesis'], 2, 4],
-  ['¿Cuál es el número atómico del carbono?', ['4','6','8','12'], 1, 4],
-  ['¿En qué batalla fue derrotado definitivamente Napoleón en 1815?', ['Austerlitz','Trafalgar','Waterloo','Leipzig'], 2, 4],
-  ['¿Cómo se llama el punto más profundo de los océanos?', ['Fosa de las Marianas','Fosa de Puerto Rico','Fosa de Java','Fosa de Tonga'], 0, 4],
-  ['¿Quién fue el primer ser humano en viajar al espacio?', ['Neil Armstrong','Yuri Gagarin','Buzz Aldrin','John Glenn'], 1, 4],
-  ['¿Cuántos elementos tiene la tabla periódica actual?', ['92','108','118','128'], 2, 4],
-  ['¿Qué país tiene más islas del mundo?', ['Indonesia','Filipinas','Suecia','Japón'], 2, 4],
-  ['¿Cuál es la lengua más hablada del mundo como lengua materna?', ['Inglés','Chino mandarín','Español','Hindi'], 1, 4],
+  ['Ciencia','¿Cuál es el elemento más abundante del universo?',['Oxígeno','Hidrógeno','Helio','Carbono'],1,'El hidrógeno forma cerca de las tres cuartas partes de la materia normal del universo.',4],
+  ['Historia','¿En qué año comenzó la Revolución Francesa?',['1689','1750','1789','1815'],2,'Empezó en 1789; el 14 de julio se tomó la Bastilla.',4],
+  ['Geografía','¿Cuál es el río más largo de Europa?',['Danubio','Rin','Volga','Támesis'],2,'El Volga mide unos 3.530 km y atraviesa Rusia. El Danubio es el segundo.',4],
+  ['Ciencia','¿Cuál es el número atómico del carbono?',['4','6','8','12'],1,'El número atómico es el de protones del núcleo, y el carbono tiene 6.',4],
+  ['Historia','¿En qué batalla fue derrotado Napoleón definitivamente en 1815?',['Austerlitz','Trafalgar','Waterloo','Leipzig'],2,'Waterloo, en la actual Bélgica, puso fin a su regreso al poder. Austerlitz fue una de sus victorias.',4],
+  ['Geografía','¿Cómo se llama el punto más profundo de los océanos?',['Fosa de las Marianas','Fosa de Puerto Rico','Fosa de Java','Fosa de Tonga'],0,'En la Fosa de las Marianas, en el Pacífico, se superan los 10.900 metros de profundidad.',4],
+  ['Historia','¿Quién fue el primer ser humano en viajar al espacio?',['Neil Armstrong','Yuri Gagarin','Buzz Aldrin','John Glenn'],1,'El soviético Yuri Gagarin lo hizo en 1961 a bordo del Vostok 1. Armstrong fue el primero en pisar la Luna.',4],
+  ['Ciencia','¿Cuántos elementos tiene la tabla periódica actual?',['92','108','118','128'],2,'Tiene 118; los últimos cuatro en nombrarse oficialmente lo fueron en 2016.',4],
+  ['Geografía','¿Qué país tiene más islas del mundo?',['Indonesia','Filipinas','Suecia','Japón'],2,'Suecia tiene unas 267.000 islas, casi todas pequeñas. Indonesia solo tiene unas 17.000.',4],
+  ['Cultura general','¿Cuál es la lengua más hablada del mundo como lengua materna?',['Inglés','Chino mandarín','Español','Hindi'],1,'Tiene más de 900 millones de hablantes nativos. El español es la segunda.',4],
+  ['Naturaleza','Verdadero o falso: botánicamente, el tomate es una fruta.',VF,0,'Se forma a partir de la flor y contiene las semillas, igual que cualquier fruta.',4],
+  ['Ciencia','Verdadero o falso: el diamante y la mina de un lápiz están hechos del mismo elemento.',VF,0,'Los dos son carbono; cambia cómo se ordenan sus átomos.',4],
+  ['Arte y letras','¿Cuál de estos compositores NO era austriaco?',['Mozart','Haydn','Schubert','Chopin'],3,'Chopin nació en Polonia. Mozart, Haydn y Schubert eran austriacos.',4],
 ];
-const MIMICA_FACIL = ['Elefante','Pizza','Bailar flamenco','Dormir','Futbolista','Cocinero','Astronauta','Mono','Lavarse los dientes',
-  'Pescar','Tocar la guitarra','Conducir un coche','Montar en bici','Pingüino','Peluquero','Nadar','Payaso','Robot','Dinosaurio',
-  'Jugar al tenis','Gallina','Surfear','Tomar un helado','Médico','Mago','Hacer una tarta','Serpiente','Boxeador','Fantasma','Esquiar'];
-const MIMICA_DIFICIL = ['Un camarero con la bandeja llena','Atrapar una mosca','Caminar contra el viento','Un astronauta flotando',
-  'Planchar una camisa','Un bebé aprendiendo a andar','Ir al dentista','Hacer cola en el supermercado','Jugar al ajedrez',
-  'Montar una tienda de campaña','Un gato que se cae de la cama','Un torero','Cambiar un pañal','Escalar una montaña','Una tormenta'];
-const RETOS_FACIL = [
-  'Di tres veces seguidas sin fallar: «Tres tristes tigres tragaban trigo en un trigal».',
-  'Aguanta 20 segundos a la pata coja.',
-  'Nombra 5 animales en 10 segundos.',
-  'Nombra 5 países de Europa en 10 segundos.',
-  'Cuenta del 20 al 0 de dos en dos sin equivocarte.',
-  'Haz 10 sentadillas contando en voz alta.',
-  'Nombra 5 frutas en 8 segundos.',
-  'Habla con voz de robot durante 15 segundos.',
-  'Cuenta lo que hiciste ayer en exactamente 3 frases.',
-  'Di el abecedario al revés desde la Z hasta la T.',
-];
-const RETOS_DIFICIL = [
-  'Di tres veces seguidas sin fallar: «El perro de San Roque no tiene rabo porque Ramón Ramírez se lo ha robado».',
-  'Nombra 8 animales en 10 segundos.',
-  'Di el abecedario al revés desde la Z hasta la M.',
-  'Nombra 6 países de África en 15 segundos.',
-  'Haz 15 sentadillas contando en voz alta.',
-  'Cuenta de 3 en 3 desde 0 hasta 36 sin equivocarte.',
-  'Aguanta 30 segundos a la pata coja.',
-  'Nombra 7 capitales de Europa en 15 segundos.',
-  'Di 6 palabras que empiecen por «ca» en 10 segundos.',
-  'Cuenta del 100 al 70 de dos en dos sin equivocarte.',
-];
-const TYPES = {
-  trivia: {label:'Pregunta', color:'var(--teal)'},
-  mimica: {label:'Mímica',   color:'var(--pink)'},
-  reto:   {label:'Reto',     color:'var(--orange)'},
+const CATS = {
+  'Ciencia':'#2ec4b6','Geografía':'#3a86ff','Historia':'#ff9f1c','Arte y letras':'#ff5d8f',
+  'Naturaleza':'#2bb673','Deportes':'#8e5cff','Cultura general':'#6b6a8f',
 };
 
 const shuffle = a => { for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
-const deck = arr => { let d=[]; return () => { if(!d.length) d = shuffle(arr.slice()); return d.pop(); }; };
-const triviaDecks = [1,2,3,4].map(l => deck(TRIVIA.filter(q => q[3]===l)));
-const nextMimica = [deck(MIMICA_FACIL), deck(MIMICA_DIFICIL)], nextReto = [deck(RETOS_FACIL), deck(RETOS_DIFICIL)];
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Saca preguntas sin repetir y evitando dos temas seguidos
+const pools = {}; let lastCat = null;
+function pickQuestion(l){
+  if (!pools[l] || !pools[l].length) pools[l] = TRIVIA.filter(q => q[5]===l);
+  const diff = pools[l].filter(q => q[0]!==lastCat), from = diff.length ? diff : pools[l];
+  const q = from[Math.floor(Math.random()*from.length)];
+  pools[l].splice(pools[l].indexOf(q),1); lastCat = q[0];
+  return q;
+}
 
-const S = { screen:'setup', names:['Jugador 1','Jugador 2'], rounds:3, players:[], turn:0, card:null, score:0, record:null };
+const S = { screen:'setup', names:['Jugador 1','Jugador 2'], rounds:3, players:[], turn:0, card:null, score:0, record:0 };
 const app = document.getElementById('app');
-let timer = null;
-const stopTimer = () => { if (timer){ clearInterval(timer); timer = null; } };
 const cur = () => S.players[S.turn % S.players.length];
 const total = () => S.rounds * S.players.length;
 const roundOf = t => Math.floor(t / S.players.length) + 1;
@@ -183,14 +165,14 @@ function header(){
   return `<div class="scores"><span class="chip on">Equipo: ${S.score} pts</span>
     <span class="chip">Nivel ${stars(level())}</span><span class="chip">Turno de ${esc(cur().name)}</span></div>`;
 }
-function show(html){ stopTimer(); app.innerHTML = html; app.firstElementChild && app.firstElementChild.classList.add('pop'); window.scrollTo(0,0); }
+function show(html){ app.innerHTML = html; app.firstElementChild && app.firstElementChild.classList.add('pop'); window.scrollTo(0,0); }
 
 // ---------- Preparar partida ----------
 function setup(){
   S.screen = 'setup';
   show(`<div class="stack">
     <h1>🎲 Pasa el móvil</h1>
-    <p class="muted">Todos sois un equipo. Pregunta, mímica o reto: ¡sumad los máximos puntos posibles! Cada ronda es más difícil.</p>
+    <p class="muted">Todos sois un equipo y tenéis que sumar los máximos puntos posibles. Cada ronda trae preguntas más difíciles.</p>
   </div>
   <div class="card">
     <div class="label">Jugadores (2 a 6)</div>
@@ -198,7 +180,7 @@ function setup(){
       <input id="name-${i}" value="${esc(n)}" maxlength="14" aria-label="Nombre del jugador ${i+1}">
       <button class="x" data-del="${i}" aria-label="Quitar jugador ${i+1}" ${S.names.length<=2?'disabled':''}>×</button></div>`).join('')}</div>
     <button class="btn small" id="add" ${S.names.length>=6?'disabled':''}>+ Añadir jugador</button>
-    <div class="label">Rondas (turnos por jugador)</div>
+    <div class="label">Rondas (preguntas por jugador)</div>
     <div class="seg">${[2,3,5,8].map(r=>`<button data-r="${r}" aria-pressed="${r===S.rounds}">${r}</button>`).join('')}</div>
   </div>
   <div class="grow"></div>
@@ -216,110 +198,42 @@ function setup(){
 // ---------- Turno ----------
 function turnScreen(){
   S.screen = 'turn';
-  const newRound = S.turn % S.players.length === 0;
-  const harder = newRound && S.turn>0 && level() > levelOf(S.turn-1);
+  const harder = S.turn>0 && S.turn % S.players.length === 0 && level() > levelOf(S.turn-1);
   show(`<div class="stack">${header()}<p class="muted">Ronda ${roundOf(S.turn)} de ${S.rounds}${S.record?` · Récord: ${S.record} pts`:''}</p></div>
   <div class="grow center" style="display:flex;flex-direction:column;justify-content:center;gap:12px">
     ${harder?`<p class="msg" style="color:var(--yellow)">⬆ ¡Sube la dificultad! Nivel ${level()}</p>`:''}
     <p class="muted">Le toca a</p>
     <div class="big" style="overflow-wrap:anywhere">${esc(cur().name)}</div>
-    <p class="muted">Cada carta vale <b>${value()} puntos</b> para el equipo</p>
+    <p class="muted">Esta pregunta vale <b>${value()} puntos</b> para el equipo</p>
   </div>
-  <button class="btn" id="draw">🃏 Sacar carta</button>`);
-  document.getElementById('draw').onclick = drawCard;
-}
-function drawCard(){
-  const r = Math.random(), L = level();
-  const type = r < .45 ? 'trivia' : r < .72 ? 'mimica' : 'reto';
-  const hard = L >= 3 ? 1 : 0;
-  if (type==='trivia'){
-    const [q,opts,ans] = triviaDecks[L-1]();
-    S.card = {type, q, order: shuffle(opts.map((o,i)=>({o,ok:i===ans})))};
-  } else if (type==='mimica') S.card = {type, word:nextMimica[hard](), secs:[60,50,40,30][L-1]};
-  else S.card = {type, text:nextReto[hard]()};
-  cardScreen();
-}
-const tag = t => `<span class="tag" style="background:${TYPES[t].color}">${TYPES[t].label} · +${value()}</span>`;
-
-function cardScreen(){
-  const c = S.card;
-  if (c.type==='trivia') return triviaScreen(c);
-  if (c.type==='mimica') return mimicaIntro(c);
-  retoScreen(c);
+  <button class="btn" id="draw">Ver la pregunta</button>`);
+  document.getElementById('draw').onclick = questionScreen;
 }
 
-// Pregunta
-function triviaScreen(c){
+// ---------- Pregunta ----------
+function questionScreen(){
   S.screen = 'card';
+  const [cat,q,opts,ans,expl] = pickQuestion(level());
+  const isVF = opts.length===2;
+  const order = isVF ? opts.map((o,i)=>({o,ok:i===ans})) : shuffle(opts.map((o,i)=>({o,ok:i===ans})));
   show(`<div class="stack">${header()}</div>
-  <div class="card">${tag('trivia')}<div class="question">${esc(c.q)}</div>
-    <p class="muted" style="color:var(--muted);font-size:.95rem">Hablad entre todos y elegid una respuesta.</p>
-    <div class="opts">${c.order.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o.o)}</button>`).join('')}</div>
+  <div class="card"><span class="tag" style="background:${CATS[cat]}">${esc(cat)} · +${value()}</span>
+    <div class="question">${esc(q)}</div>
+    <p style="color:var(--muted);font-size:.95rem;margin:0">Hablad entre todos y elegid una respuesta.</p>
+    <div class="opts">${order.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o.o)}</button>`).join('')}</div>
     <div id="res"></div>
   </div>
   <div class="grow"></div>`);
   app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
-    const i = +b.dataset.i, ok = c.order[i].ok;
-    app.querySelectorAll('.opt').forEach((x,j)=>{ x.disabled = true; if (c.order[j].ok) x.classList.add('ok'); });
+    const ok = order[+b.dataset.i].ok, right = order.find(o=>o.ok).o;
+    app.querySelectorAll('.opt').forEach((x,j)=>{ x.disabled = true; if (order[j].ok) x.classList.add('ok'); });
     if (!ok) b.classList.add('ko'); else S.score += value();
-    document.getElementById('res').innerHTML = `<p class="msg ${ok?'good':'bad'}">${ok?'¡Correcto! +'+value()+' puntos para el equipo':'¡Uy! La buena era la verde.'}</p>
-      <button class="btn" id="next" style="margin-top:12px">Siguiente</button>`;
+    document.getElementById('res').innerHTML = `
+      <p class="msg ${ok?'good':'bad'}">${ok?'¡Correcto! +'+value()+' puntos para el equipo':'¡Uy! La respuesta correcta era «'+esc(right)+'».'}</p>
+      <p class="expl">${esc(expl)}</p>
+      <button class="btn" id="next">Siguiente</button>`;
     document.getElementById('next').onclick = nextTurn;
   });
-}
-
-// Mímica
-function mimicaIntro(c){
-  S.screen = 'card';
-  show(`<div class="stack">${header()}</div>
-  <div class="card">${tag('mimica')}
-    <h2>${esc(cur().name)}, haz mímica</h2>
-    <p>Solo puedes mirar tú. Sin hablar: ¡que el equipo adivine antes de que acabe el tiempo (${c.secs} s)!</p>
-    <button class="btn" id="see">👀 Ver mi palabra</button>
-  </div><div class="grow"></div>`);
-  document.getElementById('see').onclick = () => mimicaPlay(c);
-}
-function mimicaPlay(c){
-  show(`<div class="stack">${header()}</div>
-  <div class="card">${tag('mimica')}
-    <div class="word" id="word">${esc(c.word)}</div>
-    <div class="center big" id="clock">${c.secs}</div>
-    <button class="btn" id="start">▶ Empezar (${c.secs} s)</button>
-    <div class="stack" id="who" hidden>
-      <button class="btn good" id="yes">¡Lo adivinamos! +${value()}</button>
-      <button class="btn bad" id="no">No lo adivinamos</button>
-    </div>
-  </div><div class="grow"></div>`);
-  const clock = document.getElementById('clock');
-  const finish = () => {
-    stopTimer(); clock.textContent = '0'; if (navigator.vibrate) navigator.vibrate(200);
-    document.getElementById('word').insertAdjacentHTML('afterend','<p class="msg bad center">¡Se acabó el tiempo!</p>');
-  };
-  document.getElementById('start').onclick = e => {
-    e.target.hidden = true; document.getElementById('who').hidden = false;
-    const end = Date.now()+c.secs*1000;
-    timer = setInterval(() => {
-      const left = Math.ceil((end-Date.now())/1000);
-      if (left<=0) finish(); else clock.textContent = left;
-    }, 250);
-  };
-  document.getElementById('yes').onclick = () => { S.score += value(); nextTurn(); };
-  document.getElementById('no').onclick = nextTurn;
-}
-
-// Reto
-function retoScreen(c){
-  S.screen = 'card';
-  show(`<div class="stack">${header()}</div>
-  <div class="card">${tag('reto')}
-    <h2>${esc(cur().name)}, tu reto</h2>
-    <div class="question">${esc(c.text)}</div>
-    <div class="label">Que decida el resto del equipo</div>
-    <button class="btn good" id="ok">¡Lo logró! +${value()}</button>
-    <button class="btn bad" id="ko">No lo logró</button>
-  </div><div class="grow"></div>`);
-  document.getElementById('ok').onclick = () => { S.score += value(); nextTurn(); };
-  document.getElementById('ko').onclick = nextTurn;
 }
 
 // ---------- Siguiente / final ----------
