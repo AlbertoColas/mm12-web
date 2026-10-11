@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Dark Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Karla:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  /* Misterios para resolver preguntando sí/no: una persona narra y el resto adivina. Pantalla única de noche, luz de vela. */
+  :root{
+    --bg:#0d0c12; --panel:#17151f; --line:#2a2735; --ink:#ece7dd; --muted:#9a95a6;
+    --candle:#f2b441; --ink-on-candle:#1a1204;
+    --easy:#6fbf8e; --mid:#e0a43a; --hard:#d0485e;
+    --display:'Cormorant Garamond','Iowan Old Style',Georgia,serif;
+    --body:'Karla','Segoe UI',system-ui,sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.4;
+    -webkit-user-select:none;user-select:none}
+  body{padding-inline:20px;padding-block:20px}
+  main{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:18px;min-height:calc(100dvh - 40px)}
+  h1,h2,p{margin:0}
+  h1{font-family:var(--display);font-size:3.2rem;line-height:.95;font-weight:700;letter-spacing:.01em}
+  h2{font-family:var(--display);font-size:2rem;line-height:1.05;font-weight:700;text-wrap:balance}
+  .muted{color:var(--muted)}
+  .grow{flex:1}
+  button{font:inherit;color:inherit}
+  .btn{width:100%;border:0;border-radius:14px;padding:14px 18px;font-weight:700;font-size:1.05rem;cursor:pointer;
+    background:var(--candle);color:var(--ink-on-candle)}
+  .btn:active{transform:translateY(1px);filter:brightness(.92)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .btn.row2{display:flex;justify-content:space-between;align-items:center}
+  .stack{display:flex;flex-direction:column;gap:12px}
+  .eyebrow{font-weight:700;font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .level{width:100%;text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:16px;padding:16px;cursor:pointer;
+    display:flex;flex-direction:column;gap:4px;border-left:6px solid var(--c)}
+  .level:active{filter:brightness(1.2)}
+  .level b{font-family:var(--display);font-size:1.7rem;line-height:1}
+  .level small{color:var(--muted);font-size:.95rem}
+  .level .rec{font-size:.85rem;color:var(--c);font-weight:700}
+  .pill{display:inline-block;border-radius:999px;padding:2px 12px;font-weight:700;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;
+    color:#0d0c12;background:var(--c)}
+  .story{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px}
+  .story p.text{font-family:var(--display);font-size:1.55rem;line-height:1.25;font-weight:600}
+  .solution p.text{color:var(--candle)}
+  .counter{display:flex;gap:10px;align-items:stretch}
+  .counter .num{flex:1;border:1px solid var(--line);border-radius:14px;padding:8px 14px;display:flex;flex-direction:column;justify-content:center}
+  .counter .num b{font-size:1.7rem;line-height:1;font-variant-numeric:tabular-nums}
+  .counter .btn{width:auto;padding-inline:20px}
+  .hint{border-left:3px solid var(--candle);padding:6px 12px;background:rgba(242,180,65,.08);border-radius:0 10px 10px 0}
+  .warn{color:var(--hard);font-weight:700}
+  details{border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--panel)}
+  summary{cursor:pointer;font-weight:700}
+  details ol{margin:10px 0 0;padding-left:20px;color:var(--muted);display:flex;flex-direction:column;gap:6px}
+  @media (prefers-reduced-motion:no-preference){
+    h1 .flame{display:inline-block;animation:flicker 3s ease-in-out infinite}
+    @keyframes flicker{0%,100%{opacity:1;transform:scale(1)}40%{opacity:.8;transform:scale(.96) rotate(-3deg)}70%{opacity:.95;transform:scale(1.03) rotate(2deg)}}
+    .pop{animation:pop .25s ease-out} @keyframes pop{from{transform:translateY(6px);opacity:.3}to{transform:none;opacity:1}}
+  }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+// d: dificultad (1 fácil, 2 media, 3 difícil) · t: título · s: situación · a: solución · h: pistas, de más suave a más reveladora
+const STORIES = [
+  // ---- Fácil ----
+  {d:1,t:'El ascensor',
+   s:'Un hombre vive en el piso 10 de un edificio. Cada mañana baja en ascensor hasta la calle. Por la tarde, al volver, sube en ascensor solo hasta el piso 7 y el resto lo hace andando por las escaleras. Los días de lluvia, en cambio, sube en ascensor hasta el 10. ¿Por qué?',
+   a:'El hombre es bajito y no llega al botón del piso 10; solo alcanza el del 7. Los días de lluvia lleva paraguas y con él puede pulsar el botón más alto.',
+   h:['Tiene que ver con su altura.','Los días de lluvia lleva con él algo que el resto de los días no lleva.','Ese objeto le sirve para alcanzar algo.']},
+  {d:1,t:'El vaso de agua',
+   s:'Un hombre entra en un bar y le pide un vaso de agua al camarero. El camarero saca una escopeta y le apunta a la cabeza. El hombre dice «gracias» y se va tan contento. ¿Qué ha pasado?',
+   a:'El hombre tenía hipo y pedía agua para quitárselo. El camarero lo entendió y le dio un buen susto, que se lo quitó al instante. Por eso le dio las gracias.',
+   h:['El hombre tenía un problema pequeño y molesto.','Lo que buscaba con el agua lo consiguió de otra forma.','Hacía «hic» cada pocos segundos.']},
+  {d:1,t:'Agua y cristales',
+   s:'Una mujer vuelve a casa y encuentra a su compañero muerto en el suelo del salón, rodeado de agua y trozos de cristal. No hubo ningún asesino. ¿Qué pasó?',
+   a:'Su «compañero» era un pez. El gato de la casa tiró la pecera de la mesa y el pez murió fuera del agua.',
+   h:['El «compañero» no era una persona.','Vivía dentro del cristal que se rompió.','En la casa había otro animal.']},
+  {d:1,t:'La luz apagada',
+   s:'Un hombre apaga la luz de su casa y se va a dormir. Esa noche mueren muchas personas por ello. Él no sabía nada y, al enterarse, no volvió a ser el mismo.',
+   a:'El hombre vivía en un faro y era el farero. Al apagar la luz, un barco no vio las rocas, chocó contra ellas y se hundió.',
+   h:['Vivía en un lugar muy especial, junto al mar.','La luz que apagó servía para avisar a otros.','Las víctimas viajaban en barco.']},
+  {d:1,t:'En medio del desierto',
+   s:'Un hombre aparece muerto en medio del desierto, boca abajo, con una mochila sin abrir a la espalda. No hay huellas alrededor ni nadie más cerca. ¿Qué pasó?',
+   a:'Se había lanzado en paracaídas desde un avión y el paracaídas, que era lo que parecía una mochila, no se abrió. Por eso no hay huellas: cayó del cielo.',
+   h:['Nadie llegó hasta allí caminando.','Cayó desde muy arriba.','Lo que lleva a la espalda no es una mochila corriente.']},
+  {d:1,t:'Bancarrota',
+   s:'Un hombre empuja su coche hasta la puerta de un hotel y, nada más llegar, se declara en bancarrota. ¿Por qué?',
+   a:'Está jugando al Monopoly. Su ficha es el coche y ha caído en una casilla con un hotel de otro jugador que no puede pagar.',
+   h:['No es una situación real.','Está sentado a una mesa con otras personas.','Es un juego de mesa muy famoso.']},
+  {d:1,t:'El tren perdido',
+   s:'Un hombre llega corriendo a la estación justo cuando su tren arranca. Furioso, da un puñetazo a la pared. Al día siguiente ve las noticias y da gracias por haberlo perdido. ¿Por qué?',
+   a:'Ese tren sufrió un grave accidente. Si lo hubiera cogido, habría estado dentro.',
+   h:['Lo que salió en las noticias tiene que ver con ese tren.','Perder el tren le salvó de algo.','Otras personas sí lo cogieron y no tuvieron su suerte.']},
+  // ---- Media ----
+  {d:2,t:'La cerilla rota',
+   s:'Un hombre yace muerto en medio de un campo, con una cerilla rota en la mano. No hay nada más alrededor: ni casas, ni coches. ¿Qué pasó?',
+   a:'Viajaba en un globo aerostático que perdía altura y había que aligerar peso para no estrellarse. Echaron a suertes con cerillas quién saltaría y le tocó la corta. Saltó y murió, pero así los demás se salvaron.',
+   h:['Cayó desde muy alto, pero no iba solo.','Alguien tenía que sacrificarse por los demás, y lo decidieron al azar.','Iban en un medio de transporte que flota.']},
+  {d:2,t:'Bañador en el bosque',
+   s:'Un hombre aparece muerto en medio de un bosque, vestido con bañador y gafas de buceo. El mar y los lagos más cercanos están a kilómetros. ¿Cómo llegó hasta allí?',
+   a:'Estaba buceando en el mar cuando un avión apagafuegos cargó agua y lo recogió sin darse cuenta. Lo soltó junto con el agua sobre un incendio forestal.',
+   h:['Alguien lo transportó sin enterarse.','Tiene que ver con un incendio.','Un avión recoge agua del mar para apagar fuegos.']},
+  {d:2,t:'El arma que desapareció',
+   s:'Un hombre es golpeado en la cabeza y muere en su salón. La policía registra la casa entera, pero no encuentra el arma. La única persona que estaba en casa, su mujer, les ofrece algo de cenar. ¿Qué pasó con el arma?',
+   a:'La mujer lo mató con una pierna de cordero congelada. Después la cocinó en el horno y la policía se la comió durante la investigación sin saberlo.',
+   h:['El arma era algo que se puede comer.','La policía la tuvo delante, e incluso en el plato.','Estaba congelada y se deshizo con el calor.']},
+  {d:2,t:'El aplauso final',
+   s:'Un actor termina la escena final de la obra, cae al suelo y el público se pone en pie a aplaudir durante varios minutos. Él no se levanta a saludar. ¿Por qué?',
+   a:'Su personaje moría en escena, pero el actor sufrió un infarto de verdad en ese momento. El público creyó que era parte de la interpretación.',
+   h:['El público no se dio cuenta de lo que pasaba de verdad.','Lo que parecía actuación no lo era.','Fue un problema de salud.']},
+  {d:2,t:'El cirujano',
+   s:'Un padre y su hijo tienen un grave accidente de coche. El padre muere en el acto y el niño es llevado al hospital. El cirujano de guardia lo mira y dice: «No puedo operarlo, es mi hijo». ¿Cómo es posible?',
+   a:'El cirujano es su madre.',
+   h:['No hay ningún truco con adopciones ni con familias raras.','Piensa en quién imaginas como cirujano.','El cirujano no es un hombre.']},
+  {d:2,t:'La pizza',
+   s:'Un hombre llama al número de emergencias y solo dice: «Hola, quería pedir una pizza». La operadora responde «Entendido» y envía a la policía a toda velocidad. ¿Por qué?',
+   a:'Un delincuente lo tenía retenido en su casa y lo escuchaba, así que no podía pedir ayuda abiertamente. La operadora entendió que lo de la pizza era una señal de que necesitaba auxilio.',
+   h:['Alguien le estaba escuchando.','No podía hablar con libertad.','La operadora supo leer entre líneas.']},
+  {d:2,t:'El vaquero',
+   s:'Un vaquero llega a un pueblo el viernes, se queda tres días y se marcha el viernes. ¿Cómo es posible?',
+   a:'El caballo del vaquero se llama Viernes.',
+   h:['Los días no son lo que parecen.','Piensa en su compañero de viaje.','El vaquero llegó a caballo.']},
+  // ---- Difícil ----
+  {d:3,t:'Disparo, agua y cuerda',
+   s:'Una mujer dispara a su marido, luego lo mete cinco minutos bajo el agua y después lo cuelga. Un rato más tarde, los dos cenan juntos tan tranquilos.',
+   a:'Ella es fotógrafa. Le hizo una foto (lo «disparó»), la reveló sumergiéndola en líquido (lo «ahogó») y la colgó para que se secara. Por la noche cenaron juntos.',
+   h:['Nadie sale herido en esta historia.','Ella tiene una profesión muy concreta.','El marido es una imagen.']},
+  {d:3,t:'Tres parpadeos',
+   s:'Cada noche, Elena ve por su ventana cómo su vecino de enfrente enciende y apaga tres veces la luz del salón. Una noche no lo hace y Elena llama enseguida a una ambulancia. Los médicos le dicen después que su aviso le salvó la vida.',
+   a:'El vecino es mayor y vive solo. Acordaron que cada noche haría esa señal para decir «estoy bien». Al faltar, Elena temió lo peor. Lo encontraron caído en el suelo y llegaron a tiempo.',
+   h:['Entre ellos hay un acuerdo que nadie más conoce.','La señal significaba «estoy bien».','El vecino es mayor y vive solo.']},
+  {d:3,t:'La última frase',
+   s:'Una mujer ciega recupera la vista tras una operación. Al abrir los ojos y ver a su pareja, que también es ciego, rompe la relación. Él se marcha diciéndole una última frase que ella recordará llorando el resto de su vida.',
+   a:'Fue él quien donó sus ojos para que ella pudiera ver. Su frase fue: «Cuida mucho de tus ojos, porque antes de ser tuyos fueron míos».',
+   h:['La operación tuvo un donante muy especial.','Él sabía algo que ella no sabía al despertar.','Los ojos de ella ya habían mirado el mundo antes.']},
+  {d:3,t:'La figura que parpadeaba',
+   s:'Un hombre visita un museo de cera. Se detiene ante una de las figuras, la mira unos segundos y le da un puñetazo en plena cara. Lo detienen, pero al día siguiente los periódicos lo llaman héroe.',
+   a:'La «figura» era un ladrón que se hacía pasar por estatua para robar cuando el museo cerrase. El visitante notó que parpadeaba.',
+   h:['La figura no era lo que parecía.','Alguien llevaba tiempo preparando algo en el museo.','El visitante se fijó en un detalle muy pequeño.']},
+  {d:3,t:'La sirena de las once',
+   s:'En un pueblo, la sirena suena todos los días a las doce del mediodía. Un día suena a las once. Sin hacer preguntas, todos dejan lo que están haciendo y corren hacia la montaña.',
+   a:'Es una alarma acordada por todos: se ha roto la presa que hay sobre el pueblo y va a inundarse. La sirena fuera de hora significa «evacuad hacia lo alto».',
+   h:['La sirena fuera de hora es un mensaje que todos conocen.','El peligro viene del agua.','Hay una presa cerca.']},
+];
+const LEVELS = {
+  1:{name:'Fácil',   color:'var(--easy)', hints:3, limit:0,  desc:'Giros sencillos · 3 pistas · preguntas sin límite'},
+  2:{name:'Media',   color:'var(--mid)',  hints:2, limit:30, desc:'Más ingenio · 2 pistas · 30 preguntas'},
+  3:{name:'Difícil', color:'var(--hard)', hints:1, limit:20, desc:'Pensar fuera de la caja · 1 pista · 20 preguntas'},
+};
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const hash = t => { let h = 5381; for (const c of t) h = ((h*33) ^ c.charCodeAt(0)) >>> 0; return h.toString(36); };
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+};
+const seen = new Set(store.get('darkstories-vistas', []));
+const score = store.get('darkstories-marcador', {1:[0,0],2:[0,0],3:[0,0]}); // [resueltas, jugadas]
+let g = null; // partida en curso
+
+// Rotación: no se repite una historia hasta haber visto todas las de ese nivel
+function pick(d){
+  const all = STORIES.filter(s => s.d===d);
+  let fresh = all.filter(s => !seen.has(hash(s.t)));
+  if (!fresh.length){ all.forEach(s => seen.delete(hash(s.t))); fresh = all; }
+  const s = fresh[Math.floor(Math.random()*fresh.length)];
+  seen.add(hash(s.t)); store.set('darkstories-vistas', [...seen]);
+  return s;
+}
+
+const app = document.getElementById('app');
+function show(html){ app.innerHTML = html; app.firstElementChild && app.firstElementChild.classList.add('pop'); window.scrollTo(0,0); }
+const pill = d => `<span class="pill" style="--c:${LEVELS[d].color}">${LEVELS[d].name}</span>`;
+
+// ---------- Inicio ----------
+function home(){
+  g = null;
+  show(`<div class="stack">
+    <div class="eyebrow">Para jugar en grupo</div>
+    <h1><span class="flame">🕯️</span> Dark Stories</h1>
+    <p class="muted">Una persona narra el misterio y los demás lo resuelven haciendo preguntas que solo se pueden contestar con sí o no.</p>
+  </div>
+  <div class="stack">
+    <div class="eyebrow">Elige la dificultad</div>
+    ${[1,2,3].map(d => {
+      const n = STORIES.filter(s=>s.d===d).length, [won,played] = score[d];
+      return `<button class="level" data-d="${d}" style="--c:${LEVELS[d].color}">
+        <b>${LEVELS[d].name}</b><small>${LEVELS[d].desc}</small>
+        <span class="rec">${n} historias${played ? ` · resueltas ${won} de ${played}` : ''}</span></button>`; }).join('')}
+  </div>
+  <details><summary>Cómo se juega</summary><ol>
+    <li>Una persona será el narrador. Es la única que mira la pantalla.</li>
+    <li>El narrador lee la situación en voz alta.</li>
+    <li>Los demás preguntan. El narrador solo responde «sí», «no» o «da igual».</li>
+    <li>Cada pregunta se cuenta con el botón +1. Se puede pedir una pista.</li>
+    <li>Cuando lo adivinen, o se acaben las preguntas, el narrador revela la solución.</li>
+  </ol></details>
+  <div class="grow"></div>`);
+  app.querySelectorAll('[data-d]').forEach(b => b.onclick = () => start(+b.dataset.d));
+}
+
+// ---------- Historia ----------
+function start(d){
+  g = {d, story:pick(d), asked:0, hints:0, confirm:false};
+  storyScreen();
+}
+function storyScreen(){
+  const L = LEVELS[g.d], left = L.limit ? L.limit - g.asked : null, out = L.limit && left<=0;
+  const hintsMax = Math.min(L.hints, g.story.h.length);
+  show(`<div class="stack"><div style="display:flex;justify-content:space-between;align-items:center">${pill(g.d)}<span class="muted">Narrador: tú</span></div></div>
+  <div class="story"><div class="eyebrow">${esc(g.story.t)}</div><p class="text">${esc(g.story.s)}</p></div>
+  <div class="counter">
+    <div class="num"><span class="eyebrow">Preguntas</span><b>${g.asked}${L.limit?` / ${L.limit}`:''}</b></div>
+    <button class="btn" id="q" ${out?'disabled':''}>+1</button>
+  </div>
+  ${out ? '<p class="warn">Se acabaron las preguntas. ¡Toca arriesgar una respuesta final!</p>' : ''}
+  ${g.story.h.slice(0,g.hints).map(h=>`<div class="hint">💡 ${esc(h)}</div>`).join('')}
+  <button class="btn ghost" id="hint" ${g.hints>=hintsMax?'disabled':''}>Pedir pista (${hintsMax-g.hints} ${hintsMax-g.hints===1?'restante':'restantes'})</button>
+  <div class="grow"></div>
+  <button class="btn" id="reveal">${g.confirm ? 'Pulsa otra vez: que nadie mire' : 'Revelar solución'}</button>
+  <button class="btn ghost" id="skip">Cambiar de historia</button>`);
+  document.getElementById('q').onclick = () => { g.asked++; storyScreen(); };
+  document.getElementById('hint').onclick = () => { g.hints++; storyScreen(); };
+  document.getElementById('skip').onclick = () => start(g.d);
+  document.getElementById('reveal').onclick = () => {
+    if (!g.confirm){ g.confirm = true; storyScreen(); setTimeout(() => { if (g && g.confirm && !g.revealed){ g.confirm = false; if (document.getElementById('reveal')) storyScreen(); } }, 4000); }
+    else { g.revealed = true; solutionScreen(); }
+  };
+}
+
+// ---------- Solución ----------
+function solutionScreen(){
+  show(`<div style="display:flex;justify-content:space-between;align-items:center">${pill(g.d)}<span class="muted">${g.asked} ${g.asked===1?'pregunta':'preguntas'}</span></div>
+  <div class="story solution"><div class="eyebrow">${esc(g.story.t)} · Solución</div><p class="text">${esc(g.story.a)}</p></div>
+  <p class="muted" style="text-align:center">¿Lo habíais adivinado?</p>
+  <div class="grow"></div>
+  <button class="btn" id="yes">¡Lo resolvimos!</button>
+  <button class="btn ghost" id="no">No lo resolvimos</button>`);
+  const done = won => { score[g.d][1]++; if (won) score[g.d][0]++; store.set('darkstories-marcador', score); afterScreen(won); };
+  document.getElementById('yes').onclick = () => done(true);
+  document.getElementById('no').onclick = () => done(false);
+}
+function afterScreen(won){
+  const [w,p] = score[g.d];
+  show(`<div class="stack" style="margin-top:20vh;text-align:center"><div style="font-size:3rem">${won?'🏆':'🌑'}</div>
+    <h2>${won?'¡Buen trabajo, detectives!':'Esta vez se os escapó'}</h2>
+    <p class="muted">Nivel ${LEVELS[g.d].name}: resueltas ${w} de ${p}</p></div>
+  <div class="grow"></div>
+  <button class="btn" id="again">Otra historia ${LEVELS[g.d].name.toLowerCase()}</button>
+  <button class="btn ghost" id="menu">Cambiar dificultad</button>`);
+  document.getElementById('again').onclick = () => start(g.d);
+  document.getElementById('menu').onclick = home;
+}
+home();
+</script>
+</body>
+</html>
