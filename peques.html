@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Pompas y animales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  /* Para peques de 1 a 3 años: todo se toca y responde con color y sonido. Sin textos, sin fallos y sin salidas por accidente. */
+  :root{
+    --sky-top:#bfe8ff; --sky-bottom:#fff3d6; --ink:#27406b;
+    --font:'Baloo 2','Nunito','Trebuchet MS',system-ui,sans-serif;
+    color-scheme:light;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--sky-top);font-family:var(--font);color:var(--ink);
+    touch-action:none;-webkit-user-select:none;user-select:none;overscroll-behavior:none}
+  body{background:linear-gradient(var(--sky-top),var(--sky-bottom))}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+  button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:none}
+  [hidden]{display:none!important}
+
+  #menu{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+    padding:max(20px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom))}
+  #menu h1{margin:0;font-size:clamp(2rem,9vw,3rem);font-weight:800;text-align:center;line-height:1}
+  #menu .tip{margin:0;font-size:1rem;color:#4b628c;text-align:center;max-width:22rem}
+  .modes{display:grid;gap:16px;width:min(100%,420px);grid-template-columns:1fr}
+  .mode{display:flex;align-items:center;gap:18px;border-radius:28px;padding:14px 22px;background:var(--c);
+    box-shadow:0 8px 0 rgba(39,64,107,.18);font-size:1.6rem;font-weight:800;color:#fff;text-align:left}
+  .mode:active{transform:translateY(4px);box-shadow:0 4px 0 rgba(39,64,107,.18)}
+  .mode .ico{font-size:4rem;line-height:1;font-family:'Apple Color Emoji','Noto Color Emoji','Segoe UI Emoji',sans-serif}
+
+  #animals{position:fixed;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:12px;
+    padding:max(76px,calc(env(safe-area-inset-top) + 64px)) 12px max(12px,env(safe-area-inset-bottom))}
+  .card{position:relative;border-radius:32px;background:var(--c);display:flex;align-items:center;justify-content:center;
+    font-family:'Apple Color Emoji','Noto Color Emoji','Segoe UI Emoji',var(--font);font-size:min(26vw,17vh);line-height:1;box-shadow:0 8px 0 rgba(39,64,107,.16)}
+  .card .say{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:1.1rem;font-weight:800;color:var(--ink);opacity:0;transition:opacity .2s}
+  .card.on{animation:boing .55s ease-out}
+  .card.on .say{opacity:1}
+  @keyframes boing{0%{transform:scale(1)}25%{transform:scale(1.14,.9)}50%{transform:scale(.94,1.1)}75%{transform:scale(1.05,.97)}100%{transform:scale(1)}}
+
+  /* Botón para salir: hay que mantenerlo pulsado, así un toque accidental no hace nada */
+  #exit{position:fixed;top:max(12px,env(safe-area-inset-top));left:12px;width:56px;height:56px;border-radius:50%;
+    background:conic-gradient(#27406b var(--p,0deg),rgba(255,255,255,.65) 0);display:grid;place-items:center;z-index:5;padding:0}
+  #exit span{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;font-size:1.5rem}
+  @media (prefers-reduced-motion:reduce){.card.on{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="cv" hidden></canvas>
+<section id="animals" hidden></section>
+<button id="exit" hidden aria-label="Mantén pulsado para volver al menú"><span>🏠</span></button>
+
+<section id="menu">
+  <h1>¡A jugar!</h1>
+  <p class="tip">Elige un juego. Para volver aquí, mantén pulsada la casita de la esquina.</p>
+  <div class="modes">
+    <button class="mode" data-m="bubbles" style="--c:#4aa8ff"><span class="ico">🫧</span>Pompas</button>
+    <button class="mode" data-m="animals" style="--c:#ff8a5c"><span class="ico">🐮</span>Animales</button>
+    <button class="mode" data-m="draw" style="--c:#b36bff"><span class="ico">🌈</span>Colores</button>
+  </div>
+</section>
+
+<script>
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const $animals = document.getElementById('animals'), $menu = document.getElementById('menu'), $exit = document.getElementById('exit');
+let W = 0, H = 0, dpr = 1, mode = 'menu', last = performance.now();
+function resize(){
+  dpr = window.devicePixelRatio || 1; W = innerWidth; H = innerHeight;
+  cv.width = W*dpr; cv.height = H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize', resize); resize();
+addEventListener('contextmenu', e => e.preventDefault());
+
+// ---------- Sonido (se crea al primer toque) ----------
+let ac = null;
+function audio(){
+  if (!ac){ try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  if (ac && ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function tone(freq, dur = .25, type = 'sine', vol = .16, glideTo = 0){
+  const a = audio(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (glideTo) o.frequency.exponentialRampToValueAtTime(glideTo, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur);
+}
+const PENTA = [523.25, 587.33, 659.25, 783.99, 880, 1046.5];   // notas que siempre suenan bien juntas
+const note = () => PENTA[Math.floor(Math.random()*PENTA.length)];
+function say(text){
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'es-ES'; u.rate = .8; u.pitch = 1.5; u.volume = .9; speechSynthesis.speak(u); } catch(e){}
+}
+
+// ---------- Menú y salida ----------
+function setMode(m){
+  mode = m;
+  $menu.hidden = m !== 'menu';
+  cv.hidden = !(m === 'bubbles' || m === 'draw');
+  $animals.hidden = m !== 'animals';
+  $exit.hidden = m === 'menu';
+  bubbles.length = 0; parts.length = 0; trail.length = 0;
+  try { speechSynthesis.cancel(); } catch(e){}
+  if (m === 'animals') buildAnimals();
+  if (m === 'bubbles') for (let i=0;i<4;i++) spawnBubble(undefined, H*(.25 + .15*i));
+  if (m !== 'menu') wakeLock();
+}
+document.querySelectorAll('.mode').forEach(b => b.addEventListener('pointerdown', e => {
+  e.preventDefault(); audio(); tone(660, .15, 'sine', .15, 990); setMode(b.dataset.m);
+}));
+let lock = null;
+async function wakeLock(){ try { if (!lock && navigator.wakeLock) { lock = await navigator.wakeLock.request('screen'); lock.addEventListener('release', () => lock = null); } } catch(e){} }
+
+let holdStart = 0, holdId = null;
+$exit.addEventListener('pointerdown', e => { e.preventDefault(); holdStart = performance.now(); holdId = e.pointerId; });
+const cancelHold = () => { holdStart = 0; holdId = null; $exit.style.setProperty('--p', '0deg'); };
+$exit.addEventListener('pointerup', cancelHold); $exit.addEventListener('pointercancel', cancelHold); $exit.addEventListener('pointerleave', cancelHold);
+function holdTick(){
+  if (holdStart){
+    const p = (performance.now() - holdStart) / 1200;
+    $exit.style.setProperty('--p', Math.min(1, p) * 360 + 'deg');
+    if (p >= 1){ cancelHold(); tone(440, .2, 'sine', .15, 330); setMode('menu'); }
+  }
+}
+
+// ---------- Pompas ----------
+const COLORS = [[255,99,132],[255,159,64],[255,205,86],[75,192,120],[54,162,235],[153,102,255],[255,120,200]];
+const bubbles = [], parts = [];
+let spawnT = 0;
+function spawnBubble(x, y){
+  const r = 56 + Math.random()*40;
+  bubbles.push({x: x ?? r + Math.random()*(W - 2*r), y: y ?? H + r, r, vy: 28 + Math.random()*26, ph: Math.random()*6.28, c: COLORS[Math.floor(Math.random()*COLORS.length)]});
+}
+function burst(x, y, c, n = 14){
+  for (let i=0;i<n;i++){
+    const a = Math.random()*6.28, s = 90 + Math.random()*190;
+    parts.push({x, y, vx: Math.cos(a)*s, vy: Math.sin(a)*s, life: .7 + Math.random()*.4, t: 0, r: 5 + Math.random()*7, c});
+  }
+}
+function popAt(x, y){
+  for (let i = bubbles.length-1; i >= 0; i--){
+    const b = bubbles[i];
+    if (Math.hypot(x - b.x, y - b.y) < b.r + 22){             // zona de toque generosa para dedos pequeños
+      bubbles.splice(i,1); burst(b.x, b.y, b.c);
+      const f = note(); tone(f, .22, 'sine', .2, f*1.5); tone(900, .07, 'triangle', .12, 200);
+      if (navigator.vibrate) navigator.vibrate(20);
+      return true;
+    }
+  }
+  return false;
+}
+function updateBubbles(dt){
+  spawnT -= dt;
+  if (spawnT <= 0 && bubbles.length < 7){ spawnBubble(); spawnT = .8 + Math.random()*.7; }
+  for (const b of bubbles){ b.y -= b.vy*dt; b.ph += dt*1.4; b.x += Math.sin(b.ph)*18*dt; }
+  for (let i = bubbles.length-1; i >= 0; i--) if (bubbles[i].y < -bubbles[i].r*1.5) bubbles.splice(i,1);
+}
+function drawBubble(b){
+  const [r,g,bl] = b.c;
+  const grad = ctx.createRadialGradient(b.x - b.r*.3, b.y - b.r*.3, b.r*.1, b.x, b.y, b.r);
+  grad.addColorStop(0, `rgba(255,255,255,.9)`); grad.addColorStop(.35, `rgba(${r},${g},${bl},.55)`); grad.addColorStop(1, `rgba(${r},${g},${bl},.85)`);
+  ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 4; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.8)'; ctx.beginPath(); ctx.ellipse(b.x - b.r*.35, b.y - b.r*.4, b.r*.18, b.r*.1, -.6, 0, 7); ctx.fill();
+}
+
+// ---------- Colores (dibujar con el dedo) ----------
+const trail = []; const down = new Map(); let toneT = 0;
+function addTrail(x, y){ trail.push({x, y, h: (performance.now()/6) % 360, age: 0}); }
+function updateTrail(dt){ for (const p of trail) p.age += dt; while (trail.length && trail[0].age > 1.6) trail.shift(); toneT -= dt; }
+function drawTrail(){
+  for (const p of trail){
+    const k = 1 - p.age/1.6;
+    ctx.fillStyle = `hsla(${p.h},95%,60%,${k})`; ctx.beginPath(); ctx.arc(p.x, p.y, 10 + 24*k, 0, 7); ctx.fill();
+  }
+}
+
+// ---------- Entrada en el lienzo ----------
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault(); audio(); down.set(e.pointerId, 1);
+  if (mode === 'bubbles'){
+    if (!popAt(e.clientX, e.clientY)){ burst(e.clientX, e.clientY, COLORS[Math.floor(Math.random()*COLORS.length)], 8); tone(note(), .15, 'sine', .1); }
+  } else if (mode === 'draw'){
+    for (let i=0;i<8;i++) addTrail(e.clientX + (Math.random()-.5)*40, e.clientY + (Math.random()-.5)*40);
+    burst(e.clientX, e.clientY, COLORS[Math.floor(Math.random()*COLORS.length)], 10); tone(note(), .3, 'sine', .16);
+  }
+});
+cv.addEventListener('pointermove', e => {
+  if (!down.has(e.pointerId)) return;
+  e.preventDefault();
+  if (mode === 'bubbles') popAt(e.clientX, e.clientY);
+  else if (mode === 'draw'){
+    addTrail(e.clientX, e.clientY);
+    if (toneT <= 0){ tone(PENTA[Math.min(PENTA.length-1, Math.floor(e.clientX / W * PENTA.length))], .2, 'sine', .1); toneT = .14; }
+  }
+});
+['pointerup','pointercancel'].forEach(n => cv.addEventListener(n, e => down.delete(e.pointerId)));
+
+// ---------- Animales ----------
+const ANIMALS = [
+  {e:'🐶', say:'¡Guau guau!', c:'#ffd8a8', f:[380, 240]},
+  {e:'🐱', say:'¡Miau!',       c:'#ffc9de', f:[760, 520]},
+  {e:'🐮', say:'¡Muuu!',       c:'#d4f0c0', f:[200, 150]},
+  {e:'🐑', say:'¡Beee!',       c:'#d6e6ff', f:[520, 480]},
+  {e:'🐷', say:'¡Oink oink!',  c:'#ffd0d0', f:[300, 220]},
+  {e:'🐥', say:'¡Pío pío!',    c:'#fff2a8', f:[1100, 1500]},
+];
+function buildAnimals(){
+  $animals.innerHTML = '';
+  for (const a of ANIMALS){
+    const b = document.createElement('button');
+    b.className = 'card'; b.style.setProperty('--c', a.c); b.setAttribute('aria-label', a.say);
+    b.innerHTML = `${a.e}<span class="say">${a.say}</span>`;
+    b.addEventListener('pointerdown', e => {
+      e.preventDefault(); audio();
+      b.classList.remove('on'); void b.offsetWidth; b.classList.add('on');
+      tone(a.f[0], .35, 'triangle', .2, a.f[1]);
+      say(a.say.replace(/[¡!]/g, ''));
+      if (navigator.vibrate) navigator.vibrate(25);
+    });
+    $animals.appendChild(b);
+  }
+}
+
+// ---------- Bucle ----------
+function loop(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now;
+  holdTick();
+  if (mode === 'bubbles' || mode === 'draw'){
+    ctx.clearRect(0, 0, W, H);
+    if (mode === 'bubbles'){ updateBubbles(dt); bubbles.forEach(drawBubble); }
+    else { updateTrail(dt); drawTrail(); }
+    for (const p of parts){ p.t += dt; p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 260*dt; }
+    for (let i = parts.length-1; i >= 0; i--) if (parts[i].t > parts[i].life) parts.splice(i,1);
+    for (const p of parts){ const k = 1 - p.t/p.life; ctx.fillStyle = `rgba(${p.c[0]},${p.c[1]},${p.c[2]},${k})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.r*k, 0, 7); ctx.fill(); }
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
