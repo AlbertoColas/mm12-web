@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>La Maldición de la Casa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  /* Búsqueda por la casa para toda la familia: acertijo, ir al sitio, prueba divertida y una letra de la palabra mágica. */
+  :root{
+    --bg:#120b1a; --panel:#1f1429; --line:#3a2650; --ink:#f3e9d2; --muted:#b3a3c9;
+    --pumpkin:#ff7a1a; --ghost:#a6f24b; --blood:#e0475b; --ink-on-pumpkin:#2a1200;
+    --display:'Creepster','Chiller',Impact,sans-serif; --body:'Nunito','Trebuchet MS',system-ui,sans-serif;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.4;
+    -webkit-user-select:none;user-select:none}
+  body{background:radial-gradient(circle at 50% -10%,#3b1b57 0,var(--bg) 55%);background-attachment:fixed;padding-inline:18px;padding-block:16px}
+  main{max-width:480px;margin:0 auto;display:flex;flex-direction:column;gap:16px;min-height:calc(100dvh - 32px);position:relative;z-index:1}
+  h1,h2,p{margin:0}
+  h1{font-family:var(--display);font-weight:400;font-size:3.3rem;line-height:.95;letter-spacing:.02em;color:var(--pumpkin);text-shadow:0 0 18px rgba(255,122,26,.45)}
+  h2{font-family:var(--display);font-weight:400;font-size:2.1rem;line-height:1;letter-spacing:.02em;color:var(--pumpkin)}
+  .muted{color:var(--muted)} .grow{flex:1}
+  button,input{font:inherit;color:inherit}
+  .btn{width:100%;border:0;border-radius:16px;padding:14px 18px;font-weight:800;font-size:1.1rem;cursor:pointer;background:var(--pumpkin);color:var(--ink-on-pumpkin);
+    box-shadow:0 5px 0 #a24800}
+  .btn:active{transform:translateY(3px);box-shadow:0 2px 0 #a24800}
+  .btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line);box-shadow:none}
+  .btn.green{background:var(--ghost);box-shadow:0 5px 0 #5b8a1c;color:#142200}
+  .btn:disabled{opacity:.45;cursor:default}
+  .stack{display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .eyebrow{font-weight:800;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .riddle{font-size:1.35rem;line-height:1.35;font-weight:600}
+  .where{display:inline-block;align-self:flex-start;background:rgba(166,242,75,.12);color:var(--ghost);border:1px solid rgba(166,242,75,.4);
+    border-radius:999px;padding:3px 14px;font-weight:800;font-size:.95rem}
+  .topbar{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 12px;font-weight:800;font-size:.95rem;white-space:nowrap}
+  .chip.warn{color:var(--blood);border-color:var(--blood)}
+  .icon{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel);font-size:1.2rem;cursor:pointer;display:grid;place-items:center;padding:0}
+  .slots{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px}
+  .slot{aspect-ratio:1;border-radius:10px;border:2px dashed var(--line);display:grid;place-items:center;font-family:var(--display);font-size:1.4rem;color:var(--ghost);min-width:0}
+  .slot.on{border:2px solid var(--ghost);background:rgba(166,242,75,.1);text-shadow:0 0 10px rgba(166,242,75,.7)}
+  .slot.new{animation:glow 1.2s ease-out}
+  .answer{display:flex;gap:8px}
+  .answer input{flex:1;min-width:0;background:#150d1e;border:2px solid var(--line);border-radius:14px;padding:12px 14px;font-weight:800;font-size:1.15rem;color:var(--ink);-webkit-user-select:text;user-select:text}
+  .answer input:focus{outline:3px solid var(--pumpkin);border-color:var(--pumpkin)}
+  .answer .btn{width:auto;padding-inline:20px}
+  .msg{font-weight:800}
+  .msg.bad{color:var(--blood)} .msg.good{color:var(--ghost)}
+  .hint{border-left:3px solid var(--pumpkin);padding:6px 12px;background:rgba(255,122,26,.08);border-radius:0 10px 10px 0}
+  .seg{display:flex;gap:8px;flex-wrap:wrap}
+  .seg button{flex:1 1 40%;border:2px solid var(--line);background:transparent;border-radius:14px;padding:10px 0;font-weight:800;cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--pumpkin);color:var(--ink-on-pumpkin);border-color:var(--pumpkin)}
+  .big{font-family:var(--display);font-size:3.4rem;line-height:1;color:var(--ghost);text-align:center;letter-spacing:.06em;text-shadow:0 0 16px rgba(166,242,75,.5)}
+  input.team{width:100%;background:#150d1e;border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-weight:800;color:var(--ink);-webkit-user-select:text;user-select:text}
+
+  #flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:10}
+  #flash.go{animation:flash .6s ease-out}
+  .bat{position:fixed;font-size:1.8rem;opacity:.5;pointer-events:none;z-index:0;top:var(--t);left:-10%}
+  @keyframes flash{0%{opacity:0}8%{opacity:.85}16%{opacity:.1}26%{opacity:.6}100%{opacity:0}}
+  @keyframes glow{0%{transform:scale(1.5);box-shadow:0 0 30px var(--ghost)}100%{transform:none;box-shadow:none}}
+  @keyframes fly{from{transform:translateX(0) translateY(0)}50%{transform:translateX(60vw) translateY(24px)}to{transform:translateX(120vw) translateY(-10px)}}
+  @keyframes shake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+  .shake{animation:shake .4s}
+  @media (prefers-reduced-motion:no-preference){ .bat{animation:fly var(--d) linear infinite;animation-delay:var(--w)} .pop{animation:pop .25s ease-out} @keyframes pop{from{transform:translateY(8px);opacity:.3}to{transform:none;opacity:1}} }
+  @media (prefers-reduced-motion:reduce){ .bat{display:none} #flash.go{animation:none} }
+</style>
+</head>
+<body>
+<div id="flash"></div>
+<span class="bat" style="--t:8%;--d:26s;--w:0s">🦇</span>
+<span class="bat" style="--t:30%;--d:34s;--w:-12s">🦇</span>
+<span class="bat" style="--t:62%;--d:30s;--w:-20s">🦇</span>
+<main id="app"></main>
+
+<script>
+const STAGES = [
+  {place:'la cama de cualquier habitación', ok:['cama'],
+   riddle:'Tengo cuatro patas y no corro. Tengo almohadas y no hablo. Cada noche me visitas un rato, y si miras debajo de mí, quizá algo te mire a ti.',
+   hints:['Es un mueble.','Lo usas para dormir.'],
+   trial:'Que cada persona de la familia se tumbe un segundo junto a la cama y ponga cara de fantasma dormido. ¡Foto de grupo!'},
+  {place:'la cocina', ok:['nevera','frigorifico','refrigerador','frigo'],
+   riddle:'Vivo en la cocina y mi interior es siempre frío. Me abren con hambre y a medianoche mi luz es lo único que brilla.',
+   hints:['Está en la cocina.','Guarda la comida y el helado.'],
+   trial:'Buscad algo de color naranja que haya en la cocina (sin comérselo todavía) y colocadlo en el centro de la mesa como ofrenda para la bruja.'},
+  {place:'un espejo', ok:['espejo'],
+   riddle:'Siempre te digo la verdad, pero al revés. Nunca me muevo y sin embargo siempre te imito. Si lloras, lloro; si ríes, río.',
+   hints:['Te ves a ti mismo en él.','Suele estar en el baño o en la entrada.'],
+   trial:'Cada uno pone su cara de monstruo más terrorífica frente al espejo durante 5 segundos. Entre todos votáis la más espeluznante.'},
+  {place:'una ventana', ok:['ventana','ventanas'],
+   riddle:'Soy un cuadro por el que ves la noche sin salir de casa. Si me abren, entra el frío; si me cierran, la luna se queda fuera.',
+   hints:['Tiene cristal.','Sirve para mirar hacia fuera.'],
+   trial:'Asomaos (sin salir) y encontrad entre todos tres cosas en la oscuridad: una luz lejana, una estrella y algo que se mueva. Después, aullad como lobos durante 3 segundos.'},
+  {place:'cualquier puerta de la casa', ok:['puerta','puertas'],
+   riddle:'Me dan golpes y nunca me quejo. Con llave soy segura y sin ella no hay secretos. Entras por mí y por mí te marchas.',
+   hints:['Hay muchas en la casa.','Se abre y se cierra con una manilla o una llave.'],
+   trial:'Llamad tres veces a la puerta de forma muy misteriosa. Alguien, desde dentro, responde con voz de bruja: «¿Quién osa molestarme?».'},
+  {place:'la mesa del comedor', ok:['mesa','mesas'],
+   riddle:'Tengo cuatro patas y no ando. Llevo un mantel por vestido y todos se sientan a mi alrededor. A la hora de la cena soy la reina de la casa.',
+   hints:['Es un mueble donde se come.','Tiene patas pero no camina.'],
+   trial:'Poned en el centro tres «objetos malditos» inventados con lo que tengáis a mano: una cuchara de bruja, una servilleta fantasma y un cuenco caldero. ¡Y cada uno explica su poder!'},
+  {place:'el rincón donde dejáis los zapatos', ok:['zapatos','zapato','zapatillas','zapatilla','botas','bota'],
+   riddle:'Siempre voy por parejas y nunca me peleo. Piso el suelo para que no lo pises tú. Aunque me llevas encima, quien más camina soy yo.',
+   hints:['Siempre van de dos en dos.','Se llevan en los pies.'],
+   trial:'Poned un zapato de cada persona formando un círculo mágico en el suelo, cogeos de la mano a su alrededor y recitad juntos: «¡Abracadabra, rompe el hechizo de esta casa!».'},
+  {place:'una pared donde la luz proyecte vuestra sombra', ok:['sombra','sombras'],
+   riddle:'Me persigues y no me atrapas. Me tienes siempre, pero en la oscuridad desaparezco. Si la luz está detrás de ti, me hago gigante.',
+   hints:['No se puede tocar.','Aparece cuando la luz te da por detrás.'],
+   trial:'Con una linterna o la luz del móvil, haced sombras de monstruos con las manos sobre la pared. ¡Que cada uno haga uno distinto!'},
+];
+const WORD = 'CALABAZA';
+const ORDER = [5,1,8,3,6,2,7,4];   // en qué casilla de la palabra cae la letra de cada prueba
+const FINAL_HINTS = ['Es la fruta (o verdura) más famosa de Halloween.','Se talla con una cara y se le pone una vela dentro.'];
+const SAVE = 'halloween-partida';
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z ]/g,' ').replace(/\s+/g,' ').trim();
+const okAnswer = (txt, list) => { const a = ' ' + norm(txt) + ' '; return !!norm(txt) && list.some(w => a.includes(' ' + w + ' ')); };
+const store = {
+  get(){ try { return JSON.parse(localStorage.getItem(SAVE) || 'null'); } catch(e){ return null; } },
+  set(v){ try { localStorage.setItem(SAVE, JSON.stringify(v)); } catch(e){} },
+  clear(){ try { localStorage.removeItem(SAVE); } catch(e){} },
+};
+
+let S = null, ticker = null, soundOn = false;
+const app = document.getElementById('app');
+const show = html => { app.innerHTML = html; app.firstElementChild && app.firstElementChild.classList.add('pop'); window.scrollTo(0,0); };
+const persist = () => S && store.set({...S, phase: S.phase === 'done' ? 'done' : S.phase});
+
+// ---------- Sonido ----------
+let ac = null, amb = null, ambTimer = null;
+function audio(){
+  if (!ac){ try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  if (ac && ac.state === 'suspended') ac.resume();
+  return ac;
+}
+function tone(f, d = .3, type = 'sine', v = .15, to = 0, at = 0){
+  const a = audio(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + at;
+  o.type = type; o.frequency.setValueAtTime(f, t); if (to) o.frequency.exponentialRampToValueAtTime(to, t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+  o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + d);
+}
+const sfx = {
+  good(){ [523, 659, 784, 1046].forEach((f,i) => tone(f, .35, 'triangle', .14, 0, i*.09)); },
+  bad(){ tone(220, .5, 'sawtooth', .1, 90); },
+  letter(){ [392, 494, 587, 784, 988, 1175].forEach((f,i) => tone(f, .5, 'sine', .12, 0, i*.07)); },
+  win(){ [523,659,784,1046,784,1046,1318].forEach((f,i) => tone(f, .5, 'triangle', .15, 0, i*.14)); },
+};
+function noiseBuf(a, sec){ const b = a.createBuffer(1, a.sampleRate*sec, a.sampleRate), d = b.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * Math.pow(1 - i/d.length, 2); return b; }
+function flash(){ const f = document.getElementById('flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+function thunder(){
+  const a = audio(); if (!a) return; flash();
+  const s = a.createBufferSource(), lp = a.createBiquadFilter(), g = a.createGain();
+  s.buffer = noiseBuf(a, 3); lp.type = 'lowpass'; lp.frequency.value = 220; g.gain.value = .7;
+  s.connect(lp); lp.connect(g); g.connect(a.destination); s.start();
+}
+function creak(){
+  const a = audio(); if (!a) return;
+  const o = a.createOscillator(), bp = a.createBiquadFilter(), g = a.createGain(), v = a.createOscillator(), vg = a.createGain(), t = a.currentTime;
+  o.type = 'sawtooth'; o.frequency.setValueAtTime(95, t); o.frequency.linearRampToValueAtTime(62, t + 1.3);
+  v.frequency.value = 13; vg.gain.value = 10; v.connect(vg); vg.connect(o.frequency);
+  bp.type = 'bandpass'; bp.frequency.value = 700; bp.Q.value = 3;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.07, t + .2); g.gain.linearRampToValueAtTime(0, t + 1.3);
+  o.connect(bp); bp.connect(g); g.connect(a.destination); o.start(t); v.start(t); o.stop(t + 1.4); v.stop(t + 1.4);
+}
+function howl(){
+  const a = audio(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain(), v = a.createOscillator(), vg = a.createGain(), t = a.currentTime;
+  o.type = 'sine'; o.frequency.setValueAtTime(300, t); o.frequency.linearRampToValueAtTime(560, t + .8); o.frequency.linearRampToValueAtTime(380, t + 2.2);
+  v.frequency.value = 6; vg.gain.value = 9; v.connect(vg); vg.connect(o.frequency);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.06, t + .5); g.gain.linearRampToValueAtTime(0, t + 2.3);
+  o.connect(g); g.connect(a.destination); o.start(t); v.start(t); o.stop(t + 2.4); v.stop(t + 2.4);
+}
+function scheduleEvent(){
+  ambTimer = setTimeout(() => { const r = Math.random(); (r < .35 ? thunder : r < .7 ? creak : howl)(); scheduleEvent(); }, 15000 + Math.random()*20000);
+}
+function setAmbient(on){
+  soundOn = on;
+  const a = on ? audio() : ac;
+  if (on && a && !amb){
+    const master = a.createGain(); master.gain.value = 0; master.gain.linearRampToValueAtTime(.5, a.currentTime + 2); master.connect(a.destination);
+    const lp = a.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 140; lp.connect(master);
+    const g = a.createGain(); g.gain.value = .12; g.connect(lp);
+    const o1 = a.createOscillator(), o2 = a.createOscillator(), lfo = a.createOscillator(), lg = a.createGain();
+    o1.type = o2.type = 'sawtooth'; o1.frequency.value = 55; o2.frequency.value = 55.7;
+    lfo.frequency.value = .15; lg.gain.value = .05; lfo.connect(lg); lg.connect(g.gain);
+    o1.connect(g); o2.connect(g); [o1, o2, lfo].forEach(o => o.start());
+    amb = {master, nodes: [o1, o2, lfo]}; scheduleEvent();
+  } else if (!on && amb){
+    const m = amb, t = ac.currentTime; m.master.gain.cancelScheduledValues(t); m.master.gain.linearRampToValueAtTime(0, t + .6);
+    setTimeout(() => m.nodes.forEach(n => { try { n.stop(); } catch(e){} }), 700);
+    amb = null; clearTimeout(ambTimer);
+  }
+}
+function speak(t){
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'es-ES'; u.rate = .85; u.pitch = .8; speechSynthesis.speak(u); } catch(e){}
+}
+let lock = null;
+async function wakeLock(){ try { if (!lock && navigator.wakeLock){ lock = await navigator.wakeLock.request('screen'); lock.addEventListener('release', () => lock = null); } } catch(e){} }
+
+// ---------- Reloj ----------
+const left = () => S.endAt ? Math.max(0, Math.round((S.endAt - Date.now())/1000)) : null;
+const fmt = s => Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+function startTicker(){
+  clearInterval(ticker);
+  ticker = setInterval(() => {
+    const el = document.getElementById('clock'); if (!el || !S || !S.endAt) return;
+    const l = left();
+    if (l <= 0){ el.textContent = '🕛 ¡Medianoche!'; el.classList.add('warn'); if (!S.midnight){ S.midnight = true; persist(); thunder(); } }
+    else { el.textContent = '🕛 ' + fmt(l); el.classList.toggle('warn', l < 300); }
+  }, 1000);
+}
+const topbar = () => `<div class="topbar"><span class="chip" id="clock">${S.endAt ? (left() > 0 ? '🕛 ' + fmt(left()) : '🕛 ¡Medianoche!') : '🕛 Sin prisa'}</span>
+  <span class="chip">Pistas: ${S.hints}</span><button class="icon" id="snd" aria-label="Sonido ambiente">${soundOn?'🔊':'🔇'}</button></div>`;
+const slots = (newPos) => { const got = {}; S.found.forEach(i => got[ORDER[i]] = WORD[ORDER[i]-1]);
+  return '<div class="slots">' + [1,2,3,4,5,6,7,8].map(p => `<div class="slot ${got[p]?'on':''} ${p===newPos?'new':''}">${got[p]||'?'}</div>`).join('') + '</div>'; };
+function bindCommon(){
+  const b = document.getElementById('snd'); if (b) b.onclick = () => { setAmbient(!soundOn); b.textContent = soundOn ? '🔊' : '🔇'; };
+}
+
+// ---------- Pantallas ----------
+function intro(){
+  clearInterval(ticker); S = null;
+  const saved = store.get();
+  show(`<div class="stack">
+    <div class="eyebrow">Halloween en familia</div>
+    <h1>La Maldición de la Casa</h1>
+    <p class="muted">Esta noche, la bruja Hortensia ha lanzado un hechizo sobre la casa: nadie podrá dormir hasta que se rompa. Para romperlo hay que reunir las 8 letras de la palabra mágica.</p>
+  </div>
+  <div class="card">
+    <div class="eyebrow">Cómo se juega</div>
+    <p>1. Leed el acertijo y averiguad de qué se trata.<br>2. Escribid la respuesta.<br>3. Id a ese sitio de la casa y superad la prueba.<br>4. ¡Ganáis una letra! Con las 8 letras, decid la palabra mágica.</p>
+    <p class="muted">Jugáis todos juntos, como un solo equipo. Pasad el móvil o leed en voz alta.</p>
+  </div>
+  <div class="grow"></div>
+  ${saved && saved.phase !== 'done' ? '<button class="btn green" id="resume">Continuar la partida anterior</button>' : ''}
+  <button class="btn" id="new">¡Empezar!</button>`);
+  const r = document.getElementById('resume');
+  if (r) r.onclick = () => { S = saved; wakeLock(); startTicker(); route(); };
+  document.getElementById('new').onclick = setup;
+}
+function setup(){
+  let limit = 45;
+  const draw = () => show(`<div class="stack"><h2>Preparad el ritual</h2><p class="muted">Elegid cuánto tiempo tenéis hasta que den las doce. Si se acaba, el juego continúa: nadie se queda sin resolver la maldición.</p></div>
+    <div class="card"><div class="eyebrow">Nombre del equipo</div><input class="team" id="team" value="Los Fantasmas" maxlength="24">
+      <div class="eyebrow" style="margin-top:6px">Tiempo hasta medianoche</div>
+      <div class="seg">${[30,45,60,0].map(m=>`<button data-m="${m}" aria-pressed="${m===limit}">${m?m+' min':'Sin prisa'}</button>`).join('')}</div></div>
+    <div class="grow"></div>
+    <button class="btn" id="go">🎃 Abrir la puerta</button>`);
+  draw();
+  const bind = () => {
+    app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const t = document.getElementById('team').value; limit = +b.dataset.m; draw(); document.getElementById('team').value = t; bind(); });
+    document.getElementById('go').onclick = () => {
+      audio(); setAmbient(true);
+      S = {team: (document.getElementById('team').value.trim() || 'Los Fantasmas'), endAt: limit ? Date.now() + limit*60000 : 0, stage: 0, found: [], hints: 0, h: 0, phase: 'riddle', midnight: false};
+      persist(); wakeLock(); startTicker(); route();
+    };
+  };
+  bind();
+}
+function route(){
+  if (S.phase === 'riddle') riddle();
+  else if (S.phase === 'trial') trial();
+  else if (S.phase === 'final') finalWord();
+  else win();
+}
+function riddle(msg){
+  const st = STAGES[S.stage];
+  show(`${topbar()}
+  ${slots()}
+  <div class="card"><div class="eyebrow">Enigma ${S.stage+1} de ${STAGES.length}</div>
+    <p class="riddle">${esc(st.riddle)}</p>
+    <button class="btn ghost" id="read" style="width:auto;align-self:flex-start;padding:8px 16px;font-size:1rem">🔈 Leer en voz alta</button></div>
+  ${st.hints.slice(0, S.h).map(h => `<div class="hint">🔮 ${esc(h)}</div>`).join('')}
+  <div class="answer" id="ansrow"><input id="ans" placeholder="¿Qué es?" autocomplete="off" autocapitalize="none" enterkeyhint="done"><button class="btn" id="send">Probar</button></div>
+  <p class="msg ${msg && msg.good ? 'good' : 'bad'}" id="msg">${msg ? esc(msg.t) : ''}</p>
+  <div class="grow"></div>
+  <button class="btn ghost" id="hint" ${S.h >= st.hints.length ? 'disabled' : ''}>Pedir una pista a la bruja</button>
+  <button class="btn ghost" id="give" ${S.h < st.hints.length ? 'disabled' : ''} style="font-size:.95rem">No lo sacamos: mostrar la respuesta</button>`);
+  bindCommon();
+  const inp = document.getElementById('ans');
+  const submit = () => {
+    if (okAnswer(inp.value, st.ok)){ sfx.good(); S.phase = 'trial'; persist(); trial(); }
+    else { sfx.bad(); document.getElementById('ansrow').classList.add('shake'); document.getElementById('msg').textContent = ['La bruja se ríe a carcajadas…','Eso no es. ¡Pensad otra vez!','Los fantasmas susurran: «frío, frío»'][Math.floor(Math.random()*3)]; setTimeout(() => document.getElementById('ansrow') && document.getElementById('ansrow').classList.remove('shake'), 450); }
+  };
+  document.getElementById('send').onclick = submit;
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  document.getElementById('read').onclick = () => speak(st.riddle);
+  document.getElementById('hint').onclick = () => { S.h++; S.hints++; persist(); riddle(); };
+  document.getElementById('give').onclick = () => { S.hints++; sfx.bad(); S.phase = 'trial'; S.gave = true; persist(); trial(); };
+}
+function trial(){
+  const st = STAGES[S.stage];
+  show(`${topbar()}
+  ${slots()}
+  <div class="card"><div class="eyebrow">${S.gave ? 'La respuesta era «' + esc(st.ok[0]) + '»' : '¡Correcto!'}</div>
+    <h2>Id a ${esc(st.place)}</h2>
+    <p class="eyebrow" style="margin-top:6px">Prueba</p>
+    <p class="riddle">${esc(st.trial)}</p></div>
+  <div class="grow"></div>
+  <button class="btn green" id="done">¡Prueba superada!</button>`);
+  bindCommon();
+  document.getElementById('done').onclick = () => {
+    const pos = ORDER[S.stage]; S.found.push(S.stage); S.stage++; S.h = 0; S.gave = false; S.phase = S.stage >= STAGES.length ? 'final' : 'riddle'; persist(); sfx.letter();
+    letterReveal(pos);
+  };
+}
+function letterReveal(pos){
+  const nextIsFinal = S.phase === 'final';
+  show(`${topbar()}
+  ${slots(pos)}
+  <div class="stack" style="text-align:center;margin-top:8vh"><div class="big">${WORD[pos-1]}</div>
+    <p>¡Habéis conseguido la letra de la casilla ${pos}!</p>
+    <p class="muted">Quedan ${STAGES.length - S.found.length} ${STAGES.length - S.found.length === 1 ? 'letra' : 'letras'}.</p></div>
+  <div class="grow"></div>
+  <button class="btn" id="next">${nextIsFinal ? 'Decir la palabra mágica' : 'Siguiente enigma'}</button>`);
+  bindCommon();
+  document.getElementById('next').onclick = route;
+}
+function finalWord(msg){
+  show(`${topbar()}
+  ${slots()}
+  <div class="card"><div class="eyebrow">Último paso</div>
+    <h2>La palabra mágica</h2>
+    <p class="riddle">Ya tenéis las 8 letras. Ordenadlas, escribid la palabra y romped el hechizo de Hortensia.</p></div>
+  ${FINAL_HINTS.slice(0, S.h).map(h => `<div class="hint">🔮 ${esc(h)}</div>`).join('')}
+  <div class="answer" id="ansrow"><input id="ans" placeholder="La palabra…" autocomplete="off" autocapitalize="none"><button class="btn" id="send">Decir</button></div>
+  <p class="msg bad" id="msg">${msg ? esc(msg) : ''}</p>
+  <div class="grow"></div>
+  <button class="btn ghost" id="hint" ${S.h >= FINAL_HINTS.length ? 'disabled' : ''}>Pedir una pista</button>`);
+  bindCommon();
+  const inp = document.getElementById('ans');
+  const submit = () => {
+    if (norm(inp.value).replace(/ /g,'') === WORD.toLowerCase()){ S.phase = 'done'; S.doneAt = Date.now(); persist(); store.clear(); sfx.win(); thunder(); win(); }
+    else { sfx.bad(); document.getElementById('ansrow').classList.add('shake'); document.getElementById('msg').textContent = 'Casi… las letras no forman esa palabra.'; setTimeout(() => document.getElementById('ansrow') && document.getElementById('ansrow').classList.remove('shake'), 450); }
+  };
+  document.getElementById('send').onclick = submit;
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  document.getElementById('hint').onclick = () => { S.h++; S.hints++; persist(); finalWord(); };
+}
+function win(){
+  clearInterval(ticker);
+  const stars = S.hints <= 3 ? 3 : S.hints <= 8 ? 2 : 1;
+  show(`<div class="stack" style="text-align:center;margin-top:4vh"><div style="font-size:4rem">🎃</div>
+    <h1>¡Hechizo roto!</h1>
+    <p>${esc(S.team)} ha derrotado a la bruja Hortensia y la casa vuelve a la normalidad.</p></div>
+  <div class="card" style="text-align:center"><div class="big">${'★'.repeat(stars)}<span style="color:var(--line)">${'★'.repeat(3-stars)}</span></div>
+    <p class="muted">Pistas usadas: ${S.hints}${S.endAt ? (S.midnight ? ' · llegasteis pasada la medianoche' : ' · ¡a tiempo!') : ''}</p></div>
+  <p class="muted" style="text-align:center">Ahora sí: ¡a por los caramelos!</p>
+  <div class="grow"></div>
+  <button class="btn" id="again">Jugar otra vez</button>`);
+  document.getElementById('again').onclick = () => { store.clear(); intro(); };
+}
+intro();
+</script>
+</body>
+</html>
