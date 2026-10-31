@@ -79,42 +79,42 @@
 
 <script>
 const STAGES = [
-  {place:'la cama de cualquier habitación', ok:['cama'],
-   riddle:'Tengo cuatro patas y no corro. Tengo almohadas y no hablo. Cada noche me visitas un rato, y si miras debajo de mí, quizá algo te mire a ti.',
-   hints:['Es un mueble.','Lo usas para dormir.'],
-   trial:'Que cada persona de la familia se tumbe un segundo junto a la cama y ponga cara de fantasma dormido. ¡Foto de grupo!'},
-  {place:'la cocina', ok:['nevera','frigorifico','refrigerador','frigo'],
-   riddle:'Vivo en la cocina y mi interior es siempre frío. Me abren con hambre y a medianoche mi luz es lo único que brilla.',
-   hints:['Está en la cocina.','Guarda la comida y el helado.'],
-   trial:'Buscad algo de color naranja que haya en la cocina (sin comérselo todavía) y colocadlo en el centro de la mesa como ofrenda para la bruja.'},
-  {place:'un espejo', ok:['espejo'],
-   riddle:'Siempre te digo la verdad, pero al revés. Nunca me muevo y sin embargo siempre te imito. Si lloras, lloro; si ríes, río.',
-   hints:['Te ves a ti mismo en él.','Suele estar en el baño o en la entrada.'],
+  {place:'la puerta de entrada o el sitio donde guardáis las llaves', ok:['llave','llaves'],
+   riddle:'Tengo dientes pero no muerdo. Abro sin hablar y cierro sin mover los labios. Sin mí, la casa guarda para siempre sus secretos.',
+   hints:['Es pequeña y suele ir en un llavero.','Se mete en una cerradura y se gira.'],
+   trial:'Cada persona susurra un secreto «de mentira» de la casa, inventado y misterioso (por ejemplo: «en la lavadora vive un duende»). El resto adivina si es real.'},
+  {place:'donde guardéis la escoba (o cualquier cosa que sirva de escoba)', ok:['escoba','escobas','escobon'],
+   riddle:'Barro sin ser el mar y vuelo sin tener alas, aunque solo en las leyendas. Las brujas me prefieren a un coche.',
+   hints:['Sirve para limpiar el suelo.','Tiene un palo largo y cerdas en la punta.'],
+   trial:'Cada uno monta en ella unos segundos, como si volara, y lanza su mejor grito de bruja. ¡El resto aplaude o abuchea!'},
+  {place:'un espejo', ok:['espejo','espejos'],
+   riddle:'Me rompes y te regalo siete años de mala suerte. Me miras y me llenas de ti, aunque no me llevo nada. Tengo gemelo en todas partes, pero nunca me toca.',
+   hints:['Te devuelve tu propia imagen.','Suele estar en el baño o en la entrada.'],
    trial:'Cada uno pone su cara de monstruo más terrorífica frente al espejo durante 5 segundos. Entre todos votáis la más espeluznante.'},
   {place:'una ventana', ok:['ventana','ventanas'],
-   riddle:'Soy un cuadro por el que ves la noche sin salir de casa. Si me abren, entra el frío; si me cierran, la luna se queda fuera.',
-   hints:['Tiene cristal.','Sirve para mirar hacia fuera.'],
+   riddle:'Soy el ojo de la casa: ni parpadeo ni lloro, pero llevo cortinas por pestañas. Por mí se cuelan la luna y las miradas curiosas.',
+   hints:['Es transparente.','Se abre para ventilar y se cierra para el frío.'],
    trial:'Asomaos (sin salir) y encontrad entre todos tres cosas en la oscuridad: una luz lejana, una estrella y algo que se mueva. Después, aullad como lobos durante 3 segundos.'},
-  {place:'cualquier puerta de la casa', ok:['puerta','puertas'],
-   riddle:'Me dan golpes y nunca me quejo. Con llave soy segura y sin ella no hay secretos. Entras por mí y por mí te marchas.',
-   hints:['Hay muchas en la casa.','Se abre y se cierra con una manilla o una llave.'],
-   trial:'Llamad tres veces a la puerta de forma muy misteriosa. Alguien, desde dentro, responde con voz de bruja: «¿Quién osa molestarme?».'},
-  {place:'la mesa del comedor', ok:['mesa','mesas'],
-   riddle:'Tengo cuatro patas y no ando. Llevo un mantel por vestido y todos se sientan a mi alrededor. A la hora de la cena soy la reina de la casa.',
-   hints:['Es un mueble donde se come.','Tiene patas pero no camina.'],
-   trial:'Poned en el centro tres «objetos malditos» inventados con lo que tengáis a mano: una cuchara de bruja, una servilleta fantasma y un cuenco caldero. ¡Y cada uno explica su poder!'},
-  {place:'el rincón donde dejáis los zapatos', ok:['zapatos','zapato','zapatillas','zapatilla','botas','bota'],
-   riddle:'Siempre voy por parejas y nunca me peleo. Piso el suelo para que no lo pises tú. Aunque me llevas encima, quien más camina soy yo.',
-   hints:['Siempre van de dos en dos.','Se llevan en los pies.'],
-   trial:'Poned un zapato de cada persona formando un círculo mágico en el suelo, cogeos de la mano a su alrededor y recitad juntos: «¡Abracadabra, rompe el hechizo de esta casa!».'},
+  {place:'la cocina', ok:['sarten','sartenes'],
+   riddle:'Tengo mango y no soy una taza. Con fuego en mi barriga hago saltar tortillas y, en las películas, a veces me usan de arma.',
+   hints:['Es de cocina y de metal.','Es redonda, plana y con un mango largo.'],
+   trial:'Cada uno coge un utensilio de cocina y lo usa de varita mágica: inventa un hechizo que rime para convertir a otra persona en rana.'},
+  {place:'un rincón donde podáis apagar la luz un momento', ok:['vela','velas','candela','cirio'],
+   riddle:'Lloro sin pena y me consumo mientras alumbro. Cuanto más viva estoy, más corta soy. Mi mayor enemigo es el viento.',
+   hints:['Da luz y calor, pero poca.','Está hecha de cera y tiene una mecha.'],
+   trial:'Apagad las luces, encended solo la linterna del móvil y contad entre todos una historia de miedo en cadena: una frase cada persona, durante dos vueltas.'},
+  {place:'el lugar donde guardáis la ropa', ok:['calcetin','calcetines'],
+   riddle:'Somos dos, pero siempre queda uno huérfano. La lavadora se traga a uno de nosotros las noches de luna llena. Vamos pegados al pie, pero no somos zapatos.',
+   hints:['Son una prenda de ropa que se pone en los pies.','Se llevan dentro de los zapatos.'],
+   trial:'Cada persona coge un calcetín, se lo pone en la mano y crea un títere de monstruo. Presentadlo con su nombre y su voz.'},
   {place:'una pared donde la luz proyecte vuestra sombra', ok:['sombra','sombras'],
-   riddle:'Me persigues y no me atrapas. Me tienes siempre, pero en la oscuridad desaparezco. Si la luz está detrás de ti, me hago gigante.',
-   hints:['No se puede tocar.','Aparece cuando la luz te da por detrás.'],
+   riddle:'Nazco cuando la luz te da por la espalda y no puedo irme sin ti. Soy más larga al atardecer que a mediodía, y en la oscuridad total me desvanezco.',
+   hints:['No se puede tocar ni guardar.','Va siempre pegada a vuestros pies, pero en el suelo o en la pared.'],
    trial:'Con una linterna o la luz del móvil, haced sombras de monstruos con las manos sobre la pared. ¡Que cada uno haga uno distinto!'},
 ];
-const WORD = 'CALABAZA';
-const ORDER = [5,1,8,3,6,2,7,4];   // en qué casilla de la palabra cae la letra de cada prueba
-const FINAL_HINTS = ['Es la fruta (o verdura) más famosa de Halloween.','Se talla con una cara y se le pone una vela dentro.'];
+const WORD = 'HECHIZOS';
+const SEQ = ['Z','H','O','C','S','E','I','H'];   // las letras salen desordenadas: hay que recomponer la palabra
+const FINAL_HINTS = ['Es lo que lanza una bruja con su varita, pero en plural.','Empieza por H y tiene dos haches.'];
 const SAVE = 'halloween-partida';
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -217,8 +217,7 @@ function startTicker(){
 }
 const topbar = () => `<div class="topbar"><span class="chip" id="clock">${S.endAt ? (left() > 0 ? '🕛 ' + fmt(left()) : '🕛 ¡Medianoche!') : '🕛 Sin prisa'}</span>
   <span class="chip">Pistas: ${S.hints}</span><button class="icon" id="snd" aria-label="Sonido ambiente">${soundOn?'🔊':'🔇'}</button></div>`;
-const slots = (newPos) => { const got = {}; S.found.forEach(i => got[ORDER[i]] = WORD[ORDER[i]-1]);
-  return '<div class="slots">' + [1,2,3,4,5,6,7,8].map(p => `<div class="slot ${got[p]?'on':''} ${p===newPos?'new':''}">${got[p]||'?'}</div>`).join('') + '</div>'; };
+const slots = (newIdx) => '<div class="slots">' + SEQ.map((ch, i) => `<div class="slot ${i < S.found.length ? 'on' : ''} ${i === newIdx ? 'new' : ''}">${i < S.found.length ? ch : '?'}</div>`).join('') + '</div>';
 function bindCommon(){
   const b = document.getElementById('snd'); if (b) b.onclick = () => { setAmbient(!soundOn); b.textContent = soundOn ? '🔊' : '🔇'; };
 }
@@ -234,7 +233,7 @@ function intro(){
   </div>
   <div class="card">
     <div class="eyebrow">Cómo se juega</div>
-    <p>1. Leed el acertijo y averiguad de qué se trata.<br>2. Escribid la respuesta.<br>3. Id a ese sitio de la casa y superad la prueba.<br>4. ¡Ganáis una letra! Con las 8 letras, decid la palabra mágica.</p>
+    <p>1. Leed el acertijo y averiguad de qué se trata.<br>2. Escribid la respuesta.<br>3. Id a ese sitio de la casa y superad la prueba.<br>4. ¡Ganáis una letra! Con las 8 letras, que salen desordenadas, descubrid la palabra mágica.</p>
     <p class="muted">Jugáis todos juntos, como un solo equipo. Pasad el móvil o leed en voz alta.</p>
   </div>
   <div class="grow"></div>
@@ -306,16 +305,16 @@ function trial(){
   <button class="btn green" id="done">¡Prueba superada!</button>`);
   bindCommon();
   document.getElementById('done').onclick = () => {
-    const pos = ORDER[S.stage]; S.found.push(S.stage); S.stage++; S.h = 0; S.gave = false; S.phase = S.stage >= STAGES.length ? 'final' : 'riddle'; persist(); sfx.letter();
-    letterReveal(pos);
+    const idx = S.found.length; S.found.push(S.stage); S.stage++; S.h = 0; S.gave = false; S.phase = S.stage >= STAGES.length ? 'final' : 'riddle'; persist(); sfx.letter();
+    letterReveal(idx);
   };
 }
-function letterReveal(pos){
+function letterReveal(idx){
   const nextIsFinal = S.phase === 'final';
   show(`${topbar()}
-  ${slots(pos)}
-  <div class="stack" style="text-align:center;margin-top:8vh"><div class="big">${WORD[pos-1]}</div>
-    <p>¡Habéis conseguido la letra de la casilla ${pos}!</p>
+  ${slots(idx)}
+  <div class="stack" style="text-align:center;margin-top:8vh"><div class="big">${SEQ[idx]}</div>
+    <p>¡Habéis conseguido una letra nueva!</p>
     <p class="muted">Quedan ${STAGES.length - S.found.length} ${STAGES.length - S.found.length === 1 ? 'letra' : 'letras'}.</p></div>
   <div class="grow"></div>
   <button class="btn" id="next">${nextIsFinal ? 'Decir la palabra mágica' : 'Siguiente enigma'}</button>`);
@@ -327,7 +326,7 @@ function finalWord(msg){
   ${slots()}
   <div class="card"><div class="eyebrow">Último paso</div>
     <h2>La palabra mágica</h2>
-    <p class="riddle">Ya tenéis las 8 letras. Ordenadlas, escribid la palabra y romped el hechizo de Hortensia.</p></div>
+    <p class="riddle">Ya tenéis las 8 letras, pero salieron desordenadas. Colocadlas bien, escribid la palabra y romped el hechizo de Hortensia.</p></div>
   ${FINAL_HINTS.slice(0, S.h).map(h => `<div class="hint">🔮 ${esc(h)}</div>`).join('')}
   <div class="answer" id="ansrow"><input id="ans" placeholder="La palabra…" autocomplete="off" autocapitalize="none"><button class="btn" id="send">Decir</button></div>
   <p class="msg bad" id="msg">${msg ? esc(msg) : ''}</p>
@@ -336,8 +335,8 @@ function finalWord(msg){
   bindCommon();
   const inp = document.getElementById('ans');
   const submit = () => {
-    if (norm(inp.value).replace(/ /g,'') === WORD.toLowerCase()){ S.phase = 'done'; S.doneAt = Date.now(); persist(); store.clear(); sfx.win(); thunder(); win(); }
-    else { sfx.bad(); document.getElementById('ansrow').classList.add('shake'); document.getElementById('msg').textContent = 'Casi… las letras no forman esa palabra.'; setTimeout(() => document.getElementById('ansrow') && document.getElementById('ansrow').classList.remove('shake'), 450); }
+    if (['hechizos','hechizo'].includes(norm(inp.value).replace(/ /g,''))){ S.phase = 'done'; S.doneAt = Date.now(); persist(); store.clear(); sfx.win(); thunder(); win(); }
+    else { sfx.bad(); document.getElementById('ansrow').classList.add('shake'); document.getElementById('msg').textContent = 'Casi… esas letras no forman esa palabra.'; setTimeout(() => document.getElementById('ansrow') && document.getElementById('ansrow').classList.remove('shake'), 450); }
   };
   document.getElementById('send').onclick = submit;
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
