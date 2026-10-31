@@ -34,7 +34,8 @@
   .stack{display:flex;flex-direction:column;gap:12px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:12px}
   .eyebrow{font-weight:800;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
-  .riddle{font-size:1.35rem;line-height:1.35;font-weight:600}
+  .riddle{font-size:1.35rem;line-height:1.35;font-weight:600;white-space:pre-line}
+  .code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:1.7rem;font-weight:800;letter-spacing:.12em;text-align:center;color:var(--ghost);background:#150d1e;border:1px dashed var(--line);border-radius:14px;padding:14px 8px;word-break:break-all;-webkit-user-select:text;user-select:text}
   .where{display:inline-block;align-self:flex-start;background:rgba(166,242,75,.12);color:var(--ghost);border:1px solid rgba(166,242,75,.4);
     border-radius:999px;padding:3px 14px;font-weight:800;font-size:.95rem}
   .topbar{display:flex;gap:8px;align-items:center;justify-content:space-between}
@@ -78,38 +79,41 @@
 <main id="app"></main>
 
 <script>
+// Cifrado César en el alfabeto español (con Ñ)
+const ALPHA = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ';
+const encode = (w, k) => [...w.toUpperCase()].map(c => ALPHA[(ALPHA.indexOf(c) + k) % ALPHA.length]).join('');
 const STAGES = [
-  {place:'la puerta de entrada o el sitio donde guardáis las llaves', ok:['llave','llaves'],
-   riddle:'Tengo dientes pero no muerdo. Abro sin hablar y cierro sin mover los labios. Sin mí, la casa guarda para siempre sus secretos.',
-   hints:['Es pequeña y suele ir en un llavero.','Se mete en una cerradura y se gira.'],
-   trial:'Cada persona susurra un secreto «de mentira» de la casa, inventado y misterioso (por ejemplo: «en la lavadora vive un duende»). El resto adivina si es real.'},
-  {place:'donde guardéis la escoba (o cualquier cosa que sirva de escoba)', ok:['escoba','escobas','escobon'],
-   riddle:'Barro sin ser el mar y vuelo sin tener alas, aunque solo en las leyendas. Las brujas me prefieren a un coche.',
-   hints:['Sirve para limpiar el suelo.','Tiene un palo largo y cerdas en la punta.'],
+  {place:'donde guardéis la escoba (o cualquier cosa que sirva de escoba)', ok:['escoba','escobas'],
+   riddle:'Hortensia ha dejado un mensaje en clave. Descifradlo para saber adónde ir:', code: encode('escoba', 1),
+   hints:['Cada letra ha sido sustituida por otra, siempre con el mismo salto en el alfabeto.','Cada letra avanzó una posición: para descifrar, retroceded una (la B es en realidad A).'],
    trial:'Cada uno monta en ella unos segundos, como si volara, y lanza su mejor grito de bruja. ¡El resto aplaude o abuchea!'},
   {place:'un espejo', ok:['espejo','espejos'],
-   riddle:'Me rompes y te regalo siete años de mala suerte. Me miras y me llenas de ti, aunque no me llevo nada. Tengo gemelo en todas partes, pero nunca me toca.',
-   hints:['Te devuelve tu propia imagen.','Suele estar en el baño o en la entrada.'],
+   riddle:'Un poema de la bruja:\n\nExisto sin tener vida,\nSin voz te repito siempre,\nPero nunca me desvío:\nEres tú lo que me llena.\nJamás te daré la espalda,\nOlvido todo al instante.',
+   hints:['Los versos esconden algo más que su significado.','Fijaos en la primera letra de cada verso.'],
    trial:'Cada uno pone su cara de monstruo más terrorífica frente al espejo durante 5 segundos. Entre todos votáis la más espeluznante.'},
+  {place:'la cocina', ok:['nevera','frigorifico','refrigerador'],
+   riddle:'Hortensia ha revuelto las letras de su caldero. Ordenadlas y sabréis qué guarda sus secretos más fríos:', code:'R · E · A · V · E · N',
+   hints:['Es algo que hay en todas las casas.','Siempre tiene luz por dentro y frío; guarda la comida.'],
+   trial:'Buscad algo de color naranja que haya en la cocina (sin comérselo todavía) y colocadlo en el centro de la mesa como ofrenda para la bruja.'},
   {place:'una ventana', ok:['ventana','ventanas'],
-   riddle:'Soy el ojo de la casa: ni parpadeo ni lloro, pero llevo cortinas por pestañas. Por mí se cuelan la luna y las miradas curiosas.',
-   hints:['Es transparente.','Se abre para ventilar y se cierra para el frío.'],
+   riddle:'Un fantasma telegrafista os manda esta señal desde el otro lado:', code:'...- . -. - .- -. .-',
+   hints:['Es código Morse: el punto es una señal corta, la raya una larga, y cada grupo es una letra.','Ayuda: V = ...-   ·   E = .   ·   N = -.   ·   T = -   ·   A = .-'],
    trial:'Asomaos (sin salir) y encontrad entre todos tres cosas en la oscuridad: una luz lejana, una estrella y algo que se mueva. Después, aullad como lobos durante 3 segundos.'},
-  {place:'la cocina', ok:['sarten','sartenes'],
-   riddle:'Tengo mango y no soy una taza. Con fuego en mi barriga hago saltar tortillas y, en las películas, a veces me usan de arma.',
-   hints:['Es de cocina y de metal.','Es redonda, plana y con un mango largo.'],
-   trial:'Cada uno coge un utensilio de cocina y lo usa de varita mágica: inventa un hechizo que rime para convertir a otra persona en rana.'},
-  {place:'un rincón donde podáis apagar la luz un momento', ok:['vela','velas','candela','cirio'],
-   riddle:'Lloro sin pena y me consumo mientras alumbro. Cuanto más viva estoy, más corta soy. Mi mayor enemigo es el viento.',
-   hints:['Da luz y calor, pero poca.','Está hecha de cera y tiene una mecha.'],
-   trial:'Apagad las luces, encended solo la linterna del móvil y contad entre todos una historia de miedo en cadena: una frase cada persona, durante dos vueltas.'},
+  {place:'el baño', ok:['toalla','toallas'],
+   riddle:'Cuanto más me usas para secarte, más mojada acabo yo. A todos abrazo al salir del agua, y nadie me da las gracias.',
+   hints:['Se usa después de ducharse.','Es de tela y cuelga en el baño.'],
+   trial:'Cubrid con una toalla a una persona, como si fuera un fantasma. Que camine despacio gimiendo mientras los demás adivinan quién es sin quitársela.'},
+  {place:'un hueco libre en el suelo del salón', ok:['m','eme'],
+   riddle:'¿Qué ocurre una vez en un minuto, dos veces en un momento y ninguna en cien años?',
+   hints:['La respuesta no es un suceso: es una letra.','Contad cuántas veces aparece esa letra en cada una de las tres palabras: minuto, momento y cien años.'],
+   trial:'Entre todos, formad con vuestros cuerpos en el suelo la letra que habéis encontrado. ¡Y hacedle una foto desde arriba!'},
   {place:'el lugar donde guardáis la ropa', ok:['calcetin','calcetines'],
-   riddle:'Somos dos, pero siempre queda uno huérfano. La lavadora se traga a uno de nosotros las noches de luna llena. Vamos pegados al pie, pero no somos zapatos.',
-   hints:['Son una prenda de ropa que se pone en los pies.','Se llevan dentro de los zapatos.'],
+   riddle:'El fantasma de la lavandería os manda otro mensaje, pero esta vez el salto es mayor:', code: encode('calcetines', 4),
+   hints:['Es el mismo tipo de clave que la primera, pero con un salto más largo.','Cada letra avanzó 4 posiciones en el alfabeto español (A B C D E F G H I J K L M N Ñ O…): retroceded 4.'],
    trial:'Cada persona coge un calcetín, se lo pone en la mano y crea un títere de monstruo. Presentadlo con su nombre y su voz.'},
   {place:'una pared donde la luz proyecte vuestra sombra', ok:['sombra','sombras'],
-   riddle:'Nazco cuando la luz te da por la espalda y no puedo irme sin ti. Soy más larga al atardecer que a mediodía, y en la oscuridad total me desvanezco.',
-   hints:['No se puede tocar ni guardar.','Va siempre pegada a vuestros pies, pero en el suelo o en la pared.'],
+   riddle:'Me llevas contigo sin saberlo, pero jamás podrás regalarme. Si te acercas a la luz, me escondo; si te alejas de ella, me estiro hasta tocar tus miedos. Ni la noche me separa de ti… salvo cuando todo es noche.',
+   hints:['No pesa, no se toca, y sin luz no existe.','Aparece cuando algo tapa la luz, por ejemplo vosotros.'],
    trial:'Con una linterna o la luz del móvil, haced sombras de monstruos con las manos sobre la pared. ¡Que cada uno haga uno distinto!'},
 ];
 const WORD = 'HECHIZOS';
@@ -233,7 +237,7 @@ function intro(){
   </div>
   <div class="card">
     <div class="eyebrow">Cómo se juega</div>
-    <p>1. Leed el acertijo y averiguad de qué se trata.<br>2. Escribid la respuesta.<br>3. Id a ese sitio de la casa y superad la prueba.<br>4. ¡Ganáis una letra! Con las 8 letras, que salen desordenadas, descubrid la palabra mágica.</p>
+    <p>1. Resolved el enigma: hay poemas, mensajes secretos, códigos y trampas de lógica. ¡Es muy difícil!<br>2. Escribid la respuesta.<br>3. Id al sitio de la casa que os indique y superad la prueba.<br>4. ¡Ganáis una letra! Con las 8 letras, que salen desordenadas, descubrid la palabra mágica.</p>
     <p class="muted">Jugáis todos juntos, como un solo equipo. Pasad el móvil o leed en voz alta.</p>
   </div>
   <div class="grow"></div>
@@ -244,11 +248,11 @@ function intro(){
   document.getElementById('new').onclick = setup;
 }
 function setup(){
-  let limit = 45;
+  let limit = 60;
   const draw = () => show(`<div class="stack"><h2>Preparad el ritual</h2><p class="muted">Elegid cuánto tiempo tenéis hasta que den las doce. Si se acaba, el juego continúa: nadie se queda sin resolver la maldición.</p></div>
     <div class="card"><div class="eyebrow">Nombre del equipo</div><input class="team" id="team" value="Los Fantasmas" maxlength="24">
       <div class="eyebrow" style="margin-top:6px">Tiempo hasta medianoche</div>
-      <div class="seg">${[30,45,60,0].map(m=>`<button data-m="${m}" aria-pressed="${m===limit}">${m?m+' min':'Sin prisa'}</button>`).join('')}</div></div>
+      <div class="seg">${[45,60,90,0].map(m=>`<button data-m="${m}" aria-pressed="${m===limit}">${m?m+' min':'Sin prisa'}</button>`).join('')}</div></div>
     <div class="grow"></div>
     <button class="btn" id="go">🎃 Abrir la puerta</button>`);
   draw();
@@ -273,7 +277,7 @@ function riddle(msg){
   show(`${topbar()}
   ${slots()}
   <div class="card"><div class="eyebrow">Enigma ${S.stage+1} de ${STAGES.length}</div>
-    <p class="riddle">${esc(st.riddle)}</p>
+    <p class="riddle">${esc(st.riddle)}</p>${st.code ? `<div class="code">${esc(st.code)}</div>` : ''}
     <button class="btn ghost" id="read" style="width:auto;align-self:flex-start;padding:8px 16px;font-size:1rem">🔈 Leer en voz alta</button></div>
   ${st.hints.slice(0, S.h).map(h => `<div class="hint">🔮 ${esc(h)}</div>`).join('')}
   <div class="answer" id="ansrow"><input id="ans" placeholder="¿Qué es?" autocomplete="off" autocapitalize="none" enterkeyhint="done"><button class="btn" id="send">Probar</button></div>
@@ -289,7 +293,7 @@ function riddle(msg){
   };
   document.getElementById('send').onclick = submit;
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
-  document.getElementById('read').onclick = () => speak(st.riddle);
+  document.getElementById('read').onclick = () => speak(st.riddle.replace(/\n+/g, '. '));
   document.getElementById('hint').onclick = () => { S.h++; S.hints++; persist(); riddle(); };
   document.getElementById('give').onclick = () => { S.hints++; sfx.bad(); S.phase = 'trial'; S.gave = true; persist(); trial(); };
 }
@@ -344,7 +348,7 @@ function finalWord(msg){
 }
 function win(){
   clearInterval(ticker);
-  const stars = S.hints <= 3 ? 3 : S.hints <= 8 ? 2 : 1;
+  const stars = S.hints <= 5 ? 3 : S.hints <= 11 ? 2 : 1;
   show(`<div class="stack" style="text-align:center;margin-top:4vh"><div style="font-size:4rem">🎃</div>
     <h1>¡Hechizo roto!</h1>
     <p>${esc(S.team)} ha derrotado a la bruja Hortensia y la casa vuelve a la normalidad.</p></div>
