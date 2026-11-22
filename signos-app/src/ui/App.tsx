@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { TabBar, type TabId } from './components/TabBar';
+import { CameraView } from './components/CameraView';
 
 const TITLES: Record<TabId, string> = {
   dictionary: 'Diccionario',
@@ -15,7 +16,14 @@ export function App() {
     <div className="app">
       <main className="screen" aria-labelledby="screen-title">
         <h1 id="screen-title">{TITLES[tab]}</h1>
-        <p className="muted">Pantalla en construcción.</p>
+        {tab === 'recognize' ? (
+          <>
+            <p className="muted">Prueba de cámara: pon las manos delante y verás los puntos.</p>
+            <CameraView />
+          </>
+        ) : (
+          <p className="muted">Pantalla en construcción.</p>
+        )}
       </main>
       <TabBar current={tab} onChange={setTab} />
     </div>
