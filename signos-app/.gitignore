@@ -1,0 +1,8 @@
+node_modules
+dist
+dev-dist
+coverage
+# Se genera automáticamente con "npm install" (scripts/copy-mediapipe.mjs)
+public/mediapipe
+*.log
+.DS_Store
